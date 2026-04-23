@@ -13,7 +13,7 @@ namespace LemonEmpire.Core
         [SerializeField] private string displayName = "Предмет";
 
         [Header("Quality (set by machines)")]
-        [SerializeField] private float quality = -1f;
+        [SerializeField] private float quality = 50f;
 
         [Header("Capacity")]
         [SerializeField] private int amount = 1;

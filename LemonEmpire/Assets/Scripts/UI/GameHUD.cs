@@ -36,9 +36,11 @@ namespace LemonEmpire.UI
                 _interaction = player.GetComponent<PlayerInteraction>();
                 _carry = player.GetComponent<PlayerCarry>();
             }
-
             if (EconomyManager.Instance != null)
+            {
                 EconomyManager.Instance.OnBalanceChanged += UpdateBalance;
+                UpdateBalance(EconomyManager.Instance.Balance);
+            }
         }
 
         private void OnDestroy()
@@ -115,28 +117,28 @@ namespace LemonEmpire.UI
 
             _balanceText = CreateLabel(canvasGO.transform, "Balance", "$ 500",
                 new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1),
-                new Vector2(20, -20), new Vector2(250, 50),
+                new Vector2(20, -20), new Vector2(240, 50),
                 28, new Color(0.6f, 0.95f, 0.6f), TextAnchor.MiddleLeft,
-                new Color(0, 0, 0, 0.5f));
+                new Color(0.10f, 0.10f, 0.14f, 0.85f));
 
             _timeText = CreateLabel(canvasGO.transform, "Time", "День 1 - 08:00",
                 new Vector2(1, 1), new Vector2(1, 1), new Vector2(1, 1),
                 new Vector2(-20, -20), new Vector2(250, 50),
                 28, Color.white, TextAnchor.MiddleRight,
-                new Color(0, 0, 0, 0.5f));
+                new Color(0.10f, 0.10f, 0.14f, 0.85f));
 
             _promptText = CreateLabel(canvasGO.transform, "Prompt", "",
                 new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0.5f, 0),
                 new Vector2(0, 80), new Vector2(400, 45),
                 22, Color.white, TextAnchor.MiddleCenter,
-                new Color(0, 0, 0, 0.6f));
+                new Color(0.10f, 0.10f, 0.14f, 0.85f));
             _promptText.transform.parent.gameObject.SetActive(false);
 
             _carryText = CreateLabel(canvasGO.transform, "Carry", "",
                 new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0.5f, 1),
                 new Vector2(0, -20), new Vector2(300, 40),
                 20, new Color(1f, 0.85f, 0.3f), TextAnchor.MiddleCenter,
-                new Color(0, 0, 0, 0.4f));
+                new Color(0.10f, 0.10f, 0.14f, 0.85f));
             _carryText.transform.parent.gameObject.SetActive(false);
 
             BuildSummaryUI(canvasGO.transform);

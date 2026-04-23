@@ -22,6 +22,7 @@ namespace LemonEmpire.UI
         [SerializeField] private Canvas tabletCanvas;
         [SerializeField] private GameObject tabletPanel;
 
+        public bool IsOpen => _isOpen;
         private bool _isOpen;
         private int _deliveryOffset;
         private int _currentTab = 1;
@@ -72,7 +73,7 @@ namespace LemonEmpire.UI
             }
         }
 
-        private void Close()
+        public void Close()
         {
             _isOpen = false;
             tabletPanel.SetActive(false);

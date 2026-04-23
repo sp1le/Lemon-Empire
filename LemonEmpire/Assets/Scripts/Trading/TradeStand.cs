@@ -157,12 +157,20 @@ namespace LemonEmpire.Trading
 
         public bool SellOne()
         {
-            if (_stockQualities.Count == 0) return false;
+            return SellMultiple(1, pricePerBottle);
+        }
 
-            _stockQualities.RemoveAt(0);
+        public bool SellMultiple(int count, int revenue)
+        {
+            if (_stockQualities.Count < count) return false;
 
-            if (EconomyManager.Instance != null)
-                EconomyManager.Instance.Earn(pricePerBottle);
+            for (int i = 0; i < count; i++)
+            {
+                _stockQualities.RemoveAt(0);
+            }
+
+            if (EconomyManager.Instance != null && revenue > 0)
+                EconomyManager.Instance.Earn(revenue);
 
             UpdateDisplay();
             return true;

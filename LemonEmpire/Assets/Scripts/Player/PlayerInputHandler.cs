@@ -12,6 +12,15 @@ namespace LemonEmpire.Player
         [SerializeField] private PlayerInteraction playerInteraction;
         [SerializeField] private LemonEmpire.UI.TabletUI tabletUI;
 
+        [Header("Price Hold Settings")]
+        [SerializeField] private float holdDelay = 0.4f;
+        [SerializeField] private float holdRepeatRate = 0.08f;
+
+        private bool _priceUpHeld;
+        private bool _priceDownHeld;
+        private float _priceHoldTimer;
+        private bool _priceHoldActive;
+
         private void Awake()
         {
             if (playerController == null)
@@ -22,6 +31,25 @@ namespace LemonEmpire.Player
                 thirdPersonCamera = FindFirstObjectByType<ThirdPersonCamera>();
             if (tabletUI == null)
                 tabletUI = FindFirstObjectByType<LemonEmpire.UI.TabletUI>();
+        }
+
+        private void Update()
+        {
+            if (IsInputBlocked) return;
+
+            if (_priceUpHeld || _priceDownHeld)
+            {
+                _priceHoldTimer -= Time.unscaledDeltaTime;
+                if (_priceHoldTimer <= 0f)
+                {
+                    _priceHoldTimer = _priceHoldActive ? holdRepeatRate : holdDelay;
+                    _priceHoldActive = true;
+
+                    int dir = _priceUpHeld ? 1 : -1;
+                    var stand = playerInteraction?.CurrentTarget as LemonEmpire.Trading.TradeStand;
+                    stand?.AdjustPrice(dir);
+                }
+            }
         }
 
         private bool IsInputBlocked => Cursor.visible;
@@ -75,18 +103,45 @@ namespace LemonEmpire.Player
             tabletUI?.Toggle();
         }
 
+        private void OnCancel(InputValue value)
+        {
+            if (tabletUI != null && tabletUI.IsOpen)
+            {
+                tabletUI.Close();
+                return;
+            }
+        }
+
         private void OnPriceUp(InputValue value)
         {
             if (IsInputBlocked) return;
-            var stand = playerInteraction?.CurrentTarget as LemonEmpire.Trading.TradeStand;
-            stand?.AdjustPrice(1);
+            if (value.isPressed)
+            {
+                _priceUpHeld = true;
+                _priceHoldTimer = 0f;
+                _priceHoldActive = false;
+            }
+            else
+            {
+                _priceUpHeld = false;
+                _priceHoldActive = false;
+            }
         }
 
         private void OnPriceDown(InputValue value)
         {
             if (IsInputBlocked) return;
-            var stand = playerInteraction?.CurrentTarget as LemonEmpire.Trading.TradeStand;
-            stand?.AdjustPrice(-1);
+            if (value.isPressed)
+            {
+                _priceDownHeld = true;
+                _priceHoldTimer = 0f;
+                _priceHoldActive = false;
+            }
+            else
+            {
+                _priceDownHeld = false;
+                _priceHoldActive = false;
+            }
         }
     }
 }

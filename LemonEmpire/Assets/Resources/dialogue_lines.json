@@ -1,0 +1,38 @@
+{
+  "greetings": [
+    {"text": "О, лимонад! Давно искал что-нибудь освежающее.", "minReaction": 0},
+    {"text": "Хм, интересный ассортимент...", "minReaction": 0},
+    {"text": "Привет! Это свежий лимонад?", "minReaction": 0},
+    {"text": "Так-так, посмотрим что тут у вас...", "minReaction": 0},
+    {"text": "Мне сказали тут продают неплохой лимонад!", "minReaction": 30},
+    {"text": "Ваш лимонад хвалят в округе.", "minReaction": 40},
+    {"text": "Слышал, у вас лучший лимонад в городе!", "minReaction": 60},
+    {"text": "Я специально пришёл к вам. Репутация говорит сама за себя.", "minReaction": 70}
+  ],
+  "player_replies": [
+    {"text": "Попробуйте, не пожалеете!", "effect": "neutral", "reactionBonus": 0, "minMorale": 0},
+    {"text": "Свежайший, только сегодня сделал.", "effect": "neutral", "reactionBonus": 5, "minMorale": 0},
+    {"text": "Берите, пока не разобрали!", "effect": "pressure", "reactionBonus": -5, "minMorale": 20},
+    {"text": "Честно? Лучший лимонад на этой улице.", "effect": "confident", "reactionBonus": 10, "minMorale": 40},
+    {"text": "Могу сделать скидку, если возьмёте две!", "effect": "deal", "reactionBonus": 15, "minMorale": 30},
+    {"text": "Пожалуйста, купите... мне нужны деньги...", "effect": "desperate", "reactionBonus": 8, "minMorale": 0, "maxMorale": 20},
+    {"text": "Я делаю этот лимонад с душой. Каждая бутылка уникальна.", "effect": "artisan", "reactionBonus": 12, "minMorale": 50}
+  ],
+  "success": [
+    {"text": "Ладно, беру одну!", "minReaction": 0},
+    {"text": "Вкусно пахнет! Давайте.", "minReaction": 0},
+    {"text": "Хм, цена нормальная. Возьму.", "minReaction": 20},
+    {"text": "Отличный лимонад! Обязательно вернусь.", "minReaction": 40},
+    {"text": "Супер! Две бутылки, пожалуйста!", "minReaction": 60},
+    {"text": "Вау, освежает идеально! Это лучшее, что я пил!", "minReaction": 70},
+    {"text": "Ладно... вижу, тебе нелегко. Возьму из солидарности.", "minReaction": -10, "isDesperate": true}
+  ],
+  "fail": [
+    {"text": "Не, дороговато для меня.", "maxReaction": 100},
+    {"text": "Извини, не сегодня.", "maxReaction": 100},
+    {"text": "Что-то не внушает доверия...", "maxReaction": 30},
+    {"text": "За такую цену? Ты шутишь?", "maxReaction": 20},
+    {"text": "Нет уж, спасибо. Пойду в другое место.", "maxReaction": 40},
+    {"text": "Может быть в другой раз...", "maxReaction": 60}
+  ]
+}
