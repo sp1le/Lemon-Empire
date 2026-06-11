@@ -96,10 +96,15 @@ namespace LemonEmpire.Player
             // Apply alcohol look sway
             float swayYaw = 0f;
             float swayPitch = 0f;
+            float swayRoll = 0f;
+            Vector3 swayOffset = Vector3.zero;
             if (PlayerStatusEffects.Instance != null && PlayerStatusEffects.Instance.IsAlcoholIntoxicationActive)
             {
                 swayYaw = Mathf.Sin(Time.time * 1.5f) * 2.5f;
                 swayPitch = Mathf.Cos(Time.time * 1.1f) * 1.8f;
+                swayRoll = -Mathf.Sin(Time.time * 0.8f) * 4.0f; // 4 degrees roll sway (perfectly synchronized with HUD overlay)
+                swayOffset.x = Mathf.Sin(Time.time * 0.8f) * 0.12f; // 12cm left/right sway
+                swayOffset.y = Mathf.Cos(Time.time * 1.2f) * 0.06f; // 6cm up/down sway
             }
 
             float finalYaw = _yaw + swayYaw;
@@ -113,8 +118,8 @@ namespace LemonEmpire.Player
                 Debug.LogWarning($"[ThirdPersonCamera] Player position is (0,0,0)! Camera position set to {eyePos}. StackTrace: {System.Environment.StackTrace}");
             }
 
-            transform.position = eyePos;
-            transform.rotation = Quaternion.Euler(finalPitch, finalYaw, _currentRoll);
+            transform.rotation = Quaternion.Euler(finalPitch, finalYaw, _currentRoll + swayRoll);
+            transform.position = eyePos + transform.right * swayOffset.x + transform.up * swayOffset.y;
         }
 
         public float Yaw => _yaw;

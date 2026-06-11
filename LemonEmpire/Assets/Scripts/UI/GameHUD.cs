@@ -74,24 +74,27 @@ namespace LemonEmpire.UI
                 }
             }
 
-            // Spawn Debug Console Pedestal dynamically in the scene for testing!
-            var debugConsole = new GameObject("DebugConsolePedestal");
-            debugConsole.transform.position = new Vector3(-9f, -0.75f, -9f); // placed out of the way in the corner
-            var col = debugConsole.AddComponent<BoxCollider>();
-            col.size = new Vector3(0.8f, 1.2f, 0.8f);
-            col.isTrigger = false;
-
-            var visual = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            visual.transform.SetParent(debugConsole.transform);
-            visual.transform.localPosition = Vector3.zero;
-            visual.transform.localScale = new Vector3(0.5f, 0.6f, 0.5f);
-            var renderer = visual.GetComponent<Renderer>();
-            if (renderer != null)
+            // Spawn Debug Console Pedestal dynamically in the scene for testing if not already present!
+            if (GameObject.Find("DebugConsolePedestal") == null)
             {
-                renderer.material.color = new Color(0.91f, 0.64f, 0.26f, 1f); // Glowing Gold Pedestal
-            }
+                var debugConsole = new GameObject("DebugConsolePedestal");
+                debugConsole.transform.position = new Vector3(3f, -0.75f, 2f); // Placed right in front of player spawn for quick access!
+                var col = debugConsole.AddComponent<BoxCollider>();
+                col.size = new Vector3(0.8f, 1.2f, 0.8f);
+                col.isTrigger = false;
 
-            debugConsole.AddComponent<LemonEmpire.DebugTools.DebugTriggerConsole>();
+                var visual = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+                visual.transform.SetParent(debugConsole.transform);
+                visual.transform.localPosition = Vector3.zero;
+                visual.transform.localScale = new Vector3(0.5f, 0.6f, 0.5f);
+                var renderer = visual.GetComponent<Renderer>();
+                if (renderer != null)
+                {
+                    renderer.material.color = new Color(0.91f, 0.64f, 0.26f, 1f); // Glowing Gold Pedestal
+                }
+
+                debugConsole.AddComponent<LemonEmpire.DebugTools.DebugTriggerConsole>();
+            }
 
             var vitalsCanvas = GameObject.Find("VitalsCanvas");
             if (vitalsCanvas != null)
@@ -765,6 +768,7 @@ namespace LemonEmpire.UI
 
             BuildStrangeStateOverlays();
             BuildPriceInputModal();
+            BuildGameOverModal();
         }
 
         public void ShowDaySummary(TimeManager timeMan, EconomyManager ecoMan)
@@ -806,6 +810,7 @@ namespace LemonEmpire.UI
         {
             int size = 64;
             Texture2D tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+            tex.wrapMode = TextureWrapMode.Clamp;
             float center = size / 2f;
             for (int y = 0; y < size; y++)
             {
@@ -999,10 +1004,10 @@ namespace LemonEmpire.UI
             // ── 14. Alcohol Intoxication Overlay (Pinkish-purple radial vignette texture!) ──────────────────────────
             _alcoholOverlay = new VisualElement();
             _alcoholOverlay.style.position = Position.Absolute;
-            _alcoholOverlay.style.left = 0f;
-            _alcoholOverlay.style.top = 0f;
-            _alcoholOverlay.style.right = 0f;
-            _alcoholOverlay.style.bottom = 0f;
+            _alcoholOverlay.style.left = Length.Percent(-15);
+            _alcoholOverlay.style.top = Length.Percent(-15);
+            _alcoholOverlay.style.right = Length.Percent(-15);
+            _alcoholOverlay.style.bottom = Length.Percent(-15);
             _alcoholOverlay.style.backgroundImage = new StyleBackground(CreateVignetteTexture(new Color(0.55f, 0.05f, 0.40f, 0.65f)));
             _alcoholOverlay.style.display = DisplayStyle.None;
             _hudRoot.Add(_alcoholOverlay);
@@ -1111,7 +1116,7 @@ namespace LemonEmpire.UI
                 _alcoholOverlay.style.opacity = alcoholPulse;
                 
                 // Slow rotation/spin sway representation
-                float spinRotation = Mathf.Sin(Time.time * 0.8f) * 4f; // 4 degrees slow sway
+                float spinRotation = -Mathf.Sin(Time.time * 0.8f) * 4f; // 4 degrees slow sway
                 _alcoholOverlay.style.rotate = new StyleRotate(new Rotate(new Angle(spinRotation)));
             }
             else
@@ -1275,6 +1280,81 @@ namespace LemonEmpire.UI
                 return Mathf.Max(0f, result);
             }
             return 0f;
+        }
+
+        private VisualElement _gameOverOverlay;
+
+        public void ShowGameOverPanel()
+        {
+            UnityEngine.Cursor.lockState = UnityEngine.CursorLockMode.None;
+            UnityEngine.Cursor.visible = true;
+
+            if (_gameOverOverlay != null)
+            {
+                _gameOverOverlay.style.display = DisplayStyle.Flex;
+            }
+        }
+
+        private void BuildGameOverModal()
+        {
+            _gameOverOverlay = new VisualElement();
+            _gameOverOverlay.style.position = Position.Absolute;
+            _gameOverOverlay.style.left = 0f;
+            _gameOverOverlay.style.top = 0f;
+            _gameOverOverlay.style.right = 0f;
+            _gameOverOverlay.style.bottom = 0f;
+            _gameOverOverlay.style.backgroundColor = new StyleColor(new Color(0f, 0f, 0f, 0.85f));
+            _gameOverOverlay.style.alignItems = Align.Center;
+            _gameOverOverlay.style.justifyContent = Justify.Center;
+            _gameOverOverlay.style.display = DisplayStyle.None;
+            _hudRoot.Add(_gameOverOverlay);
+
+            var card = new VisualElement();
+            card.style.width = 400f;
+            card.style.backgroundColor = new StyleColor(new Color(0.08f, 0.08f, 0.09f, 0.96f));
+            card.style.SetBorderRadius(20f);
+            card.style.SetBorderWidth(2f);
+            card.style.SetBorderColor(new Color(0.95f, 0.2f, 0.2f, 1f)); // Red border
+            card.style.paddingLeft = 32f;
+            card.style.paddingRight = 32f;
+            card.style.paddingTop = 28f;
+            card.style.paddingBottom = 28f;
+            card.style.alignItems = Align.Center;
+            _gameOverOverlay.Add(card);
+
+            var title = new Label("БАНКРОТСТВО");
+            title.style.fontSize = 24f;
+            title.style.color = new StyleColor(new Color(0.95f, 0.2f, 0.2f, 1f));
+            title.style.unityFontStyleAndWeight = FontStyle.Bold;
+            title.style.marginBottom = 12f;
+            card.Add(title);
+
+            var desc = new Label("Ваш баланс упал ниже $10, а на полках не осталось товара для продажи.\nЛимонная Империя закрыта!");
+            desc.style.fontSize = 14f;
+            desc.style.color = new StyleColor(Color.white);
+            desc.style.unityTextAlign = TextAnchor.MiddleCenter;
+            desc.style.whiteSpace = WhiteSpace.Normal;
+            desc.style.marginBottom = 24f;
+            card.Add(desc);
+
+            var restartBtn = new Button();
+            restartBtn.text = "НАЧАТЬ ЗАНОВО";
+            restartBtn.style.width = Length.Percent(100);
+            restartBtn.style.height = 48f;
+            restartBtn.style.backgroundColor = new StyleColor(new Color(0.95f, 0.2f, 0.2f, 1f));
+            restartBtn.style.color = new StyleColor(Color.white);
+            restartBtn.style.SetBorderRadius(12f);
+            restartBtn.style.unityFontStyleAndWeight = FontStyle.Bold;
+            restartBtn.style.SetBorderWidth(0f);
+            card.Add(restartBtn);
+
+            restartBtn.RegisterCallback<MouseEnterEvent>(evt => restartBtn.style.backgroundColor = new StyleColor(new Color(1f, 0.3f, 0.3f, 1f)));
+            restartBtn.RegisterCallback<MouseLeaveEvent>(evt => restartBtn.style.backgroundColor = new StyleColor(new Color(0.95f, 0.2f, 0.2f, 1f)));
+
+            restartBtn.clicked += () =>
+            {
+                UnityEngine.SceneManagement.SceneManager.LoadScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene().name);
+            };
         }
     }
 }

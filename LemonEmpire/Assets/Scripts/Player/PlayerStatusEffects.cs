@@ -20,7 +20,7 @@ namespace LemonEmpire.Player
         [SerializeField] private float _carbonationTimer = 0f;
         [SerializeField] private float _alcoholTimer = 0f;
         private float _nextHiccupTime = 0f;
-        private float _alcoholScrambleAngle = 0f;
+        private Vector2[] _scrambledDirections = new Vector2[4];
         private float _scrambleShuffleTimer = 0f;
 
         [Header("FOV Warp Settings")]
@@ -34,7 +34,7 @@ namespace LemonEmpire.Player
         public bool IsSugarRushActive => _sugarRushTimer > 0f;
         public bool IsCoffeeCollapseActive => _coffeeCollapseTimer >= 180f;
         public bool IsLemonParanoiaActive => _failedNegotiationsCount >= 3;
-        public bool IsFinancialDepressionActive => EconomyManager.Instance != null && EconomyManager.Instance.Balance < 20;
+        public bool IsFinancialDepressionActive => false; // Disabled in favor of bankruptcy game-over lose condition
         public bool IsSanitationPanicActive => ShopCleanlinessManager.Instance != null && ShopCleanlinessManager.Instance.Cleanliness < 20f;
         public bool IsSleeping => _isSleeping;
         public bool IsCarbonationOverloadActive => _carbonationTimer > 0f;
@@ -78,18 +78,12 @@ namespace LemonEmpire.Player
                 _scrambleShuffleTimer -= Time.deltaTime;
                 if (_scrambleShuffleTimer <= 0f)
                 {
-                    int choice = Random.Range(0, 3);
-                    if (choice == 0) _alcoholScrambleAngle = 90f;
-                    else if (choice == 1) _alcoholScrambleAngle = 180f;
-                    else _alcoholScrambleAngle = 270f;
-
+                    ShuffleAlcoholDirections();
                     _scrambleShuffleTimer = 15f;
-                    Debug.Log($"[PlayerStatusEffects] Alcohol scrambled controls! New rotation angle: {_alcoholScrambleAngle} degrees.");
                 }
             }
             else
             {
-                _alcoholScrambleAngle = 0f;
                 _scrambleShuffleTimer = 0f;
             }
 
@@ -159,8 +153,33 @@ namespace LemonEmpire.Player
 
         public void TriggerAlcoholIntoxication(float duration = 40f)
         {
+            bool wasActive = IsAlcoholIntoxicationActive;
             _alcoholTimer = Mathf.Max(_alcoholTimer, duration);
+            if (!wasActive)
+            {
+                ShuffleAlcoholDirections();
+                _scrambleShuffleTimer = 15f;
+            }
             Debug.Log($"[PlayerStatusEffects] Alcohol Intoxication triggered for {duration} seconds!");
+        }
+
+        private void ShuffleAlcoholDirections()
+        {
+            Vector2[] baseDirs = { Vector2.up, Vector2.down, Vector2.left, Vector2.right };
+            // Fisher-Yates shuffle
+            for (int i = baseDirs.Length - 1; i > 0; i--)
+            {
+                int j = Random.Range(0, i + 1);
+                Vector2 temp = baseDirs[i];
+                baseDirs[i] = baseDirs[j];
+                baseDirs[j] = temp;
+            }
+            _scrambledDirections = baseDirs;
+            Debug.Log($"[PlayerStatusEffects] Scrambled WASD mappings! " +
+                      $"W -> {_scrambledDirections[0]}, " +
+                      $"S -> {_scrambledDirections[1]}, " +
+                      $"A -> {_scrambledDirections[2]}, " +
+                      $"D -> {_scrambledDirections[3]}");
         }
 
         private void TriggerHiccup()
@@ -247,19 +266,23 @@ namespace LemonEmpire.Player
 
         public Vector2 GetAlcoholicDistortedInput(Vector2 input)
         {
-            if (!IsAlcoholIntoxicationActive || _alcoholScrambleAngle == 0f)
+            if (!IsAlcoholIntoxicationActive)
             {
                 return input;
             }
 
-            float rad = _alcoholScrambleAngle * Mathf.Deg2Rad;
-            float cos = Mathf.Cos(rad);
-            float sin = Mathf.Sin(rad);
+            Vector2 result = Vector2.zero;
 
-            float newX = input.x * cos - input.y * sin;
-            float newY = input.x * sin + input.y * cos;
+            // W (Up) component
+            if (input.y > 0f) result += _scrambledDirections[0] * input.y;
+            // S (Down) component
+            if (input.y < 0f) result += _scrambledDirections[1] * (-input.y);
+            // A (Left) component
+            if (input.x < 0f) result += _scrambledDirections[2] * (-input.x);
+            // D (Right) component
+            if (input.x > 0f) result += _scrambledDirections[3] * input.x;
 
-            return new Vector2(newX, newY);
+            return result;
         }
 
         private void UpdateCameraFov()

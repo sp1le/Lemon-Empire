@@ -1364,7 +1364,7 @@ namespace LemonEmpire.UI
             // Carb
             var (carbSlider, carbValLbl)   = AddSliderRow(leftCard, "Газ:", carbVal, 0f, 100f, "%");
             // Alcohol
-            var (alcSlider, alcValLbl)     = AddSliderRow(leftCard, "Алкоголь:", alcVal, 0f, 12f, "%");
+            var (alcSlider, alcValLbl)     = AddSliderRow(leftCard, "Алкоголь:", alcVal, 0f, 100f, "%");
 
             // ── Right card: preview + order ──
             var rightCard = new VisualElement();
@@ -1469,7 +1469,7 @@ namespace LemonEmpire.UI
 
             sugarSlider.RegisterValueChangedCallback(evt => { sugarVal = evt.newValue; _brewSugar = sugarVal; sugarValLbl.text = $"{sugarVal:F0}%"; updateCostAndUI(); });
             carbSlider.RegisterValueChangedCallback(evt  => { carbVal  = evt.newValue; _brewCarbonation = carbVal; carbValLbl.text = $"{carbVal:F0}%"; updateCostAndUI(); });
-            alcSlider.RegisterValueChangedCallback(evt   => { alcVal   = evt.newValue; _brewAlcohol = alcVal; alcValLbl.text = $"{alcVal:F1}%"; updateCostAndUI(); });
+            alcSlider.RegisterValueChangedCallback(evt   => { alcVal   = evt.newValue; _brewAlcohol = alcVal; alcValLbl.text = $"{alcVal:F0}%"; updateCostAndUI(); });
 
             orderBtn.clicked += () =>
             {
@@ -1505,7 +1505,7 @@ namespace LemonEmpire.UI
             Color uguiLiquidColor = new Color(
                 Mathf.Lerp(0.3f, 0.9f, sugarVal / 100f),
                 Mathf.Lerp(0.7f, 0.9f, carbVal / 100f),
-                Mathf.Lerp(0.9f, 0.5f, alcVal / 12f),
+                Mathf.Lerp(0.9f, 0.5f, alcVal / 100f),
                 0.85f
             );
 

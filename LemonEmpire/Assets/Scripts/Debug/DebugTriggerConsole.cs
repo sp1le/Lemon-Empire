@@ -131,7 +131,7 @@ namespace LemonEmpire.DebugTools
             _debugRoot.style.display = DisplayStyle.Flex;
         }
 
-        private void SetPlayerBalanceReflection(int newBalance)
+        private void SetPlayerBalanceReflection(float newBalance)
         {
             if (EconomyManager.Instance == null) return;
 
@@ -144,7 +144,7 @@ namespace LemonEmpire.DebugTools
             var eventField = typeof(EconomyManager).GetField("OnBalanceChanged", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             if (eventField != null)
             {
-                var handler = (System.Action<int>)eventField.GetValue(EconomyManager.Instance);
+                var handler = (System.Action<float>)eventField.GetValue(EconomyManager.Instance);
                 handler?.Invoke(newBalance);
             }
         }
