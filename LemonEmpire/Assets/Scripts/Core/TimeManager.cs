@@ -72,6 +72,8 @@ namespace LemonEmpire.Core
         {
             if (IsShiftActive) return;
 
+            GameEventManager.RandomizeTrend();
+
             EconomyManager.Instance?.ResetDailyStats();
 
             CurrentTimeOfDay = startHour;

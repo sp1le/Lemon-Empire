@@ -7,6 +7,8 @@ namespace LemonEmpire.Player
     [RequireComponent(typeof(CharacterController))]
     public class PlayerController : MonoBehaviour
     {
+        public static PlayerController Instance { get; private set; }
+
         [Header("Movement")]
         [SerializeField] private float walkSpeed = 4f;
         [SerializeField] private float sprintSpeed = 7f;
@@ -19,7 +21,7 @@ namespace LemonEmpire.Player
         [Header("Camera Target")]
         [Tooltip("Auto-created at head height if empty.")]
         [SerializeField] private Transform cameraTarget;
-        [SerializeField] private float cameraTargetHeight = 1.6f;
+        [SerializeField] private float cameraTargetHeight = 1.4f;
 
         private CharacterController _controller;
         private Animator _animator;
@@ -40,15 +42,29 @@ namespace LemonEmpire.Player
         public bool IsMoving => _moveInput.sqrMagnitude > 0.01f;
         public float CurrentSpeed => _currentSpeed;
         public Transform CameraTarget => cameraTarget;
+        public bool MovementLocked { get; set; }
 
         private void Awake()
         {
+            if (Instance != null && Instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
+            Instance = this;
+
             _controller = GetComponent<CharacterController>();
             _animator = GetComponentInChildren<Animator>();
-            
+
             _animIDSpeed = Animator.StringToHash("Speed");
             _animIDGrounded = Animator.StringToHash("IsGrounded");
             _animIDJump = Animator.StringToHash("Jump");
+
+            // Debug: проверка что Animator найден
+            if (_animator == null)
+                Debug.LogError("[PlayerController] Animator не найден! Добавьте Animator на дочерний объект модели.");
+            else
+                Debug.Log($"[PlayerController] Animator найден на: {_animator.gameObject.name}");
 
             EnsureCameraTarget();
         }
@@ -78,7 +94,7 @@ namespace LemonEmpire.Player
         private void EnsureCameraTarget()
         {
             if (cameraTargetHeight < 0.1f)
-                cameraTargetHeight = 1.6f;
+                cameraTargetHeight = 1.4f;
 
             if (cameraTarget == null)
             {
@@ -148,6 +164,18 @@ namespace LemonEmpire.Player
 
         private void Move()
         {
+            if (MovementLocked)
+            {
+                _currentSpeed = 0f;
+                if (_animator != null)
+                {
+                    _animator.SetFloat(_animIDSpeed, 0f);
+                    _animator.speed = 1.0f;
+                }
+                _controller.Move(new Vector3(0f, _verticalVelocity * Time.deltaTime, 0f));
+                return;
+            }
+
             float targetSpeed = _isSprinting ? sprintSpeed : walkSpeed;
 
             // Apply hunger speed penalty
@@ -155,14 +183,30 @@ namespace LemonEmpire.Player
             if (vitals != null)
                 targetSpeed *= vitals.SpeedMultiplier;
 
+            // Apply status effects speed multipliers
+            if (PlayerStatusEffects.Instance != null)
+            {
+                targetSpeed *= PlayerStatusEffects.Instance.GetSpeedMultiplier();
+            }
+
             if (_moveInput.sqrMagnitude < 0.01f)
                 targetSpeed = 0f;
 
             _currentSpeed = Mathf.Lerp(_currentSpeed, targetSpeed, Time.deltaTime * speedChangeRate);
             if (_currentSpeed < 0.01f) _currentSpeed = 0f;
-            
+
             if (_animator != null)
+            {
                 _animator.SetFloat(_animIDSpeed, _currentSpeed);
+                _animator.speed = 1.0f; // Keep animator speed normal at all times to prevent playback freezes
+
+                // Lock character model local rotation forward relative to camera look view direction at all times
+                _animator.transform.localRotation = Quaternion.identity;
+
+                // Debug: показывает текущую скорость
+                if (Time.frameCount % 30 == 0) // Каждые 30 кадров чтобы не спамить
+                    Debug.Log($"[PlayerController] Speed: {_currentSpeed:F2}, Moving: {IsMoving}, Sprinting: {_isSprinting}");
+            }
 
             Camera cam = Camera.main;
             if (cam == null) return;
@@ -189,6 +233,14 @@ namespace LemonEmpire.Player
             else
             {
                 _controller.Move(new Vector3(0f, _verticalVelocity * Time.deltaTime, 0f));
+            }
+        }
+
+        private void OnDestroy()
+        {
+            if (Instance == this)
+            {
+                Instance = null;
             }
         }
     }

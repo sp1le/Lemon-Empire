@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background: #FAF8F5; color: #333; padding: 2rem; }
+  .gdd { padding: 1.5rem; max-width: 1000px; margin: 0 auto; background: white; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
+  .gdd-header { border-bottom: 3px solid #FAC775; padding-bottom: 1.5rem; margin-bottom: 2rem; }
+  .gdd-title { font-size: 34px; font-weight: 800; color: #5C3C10; letter-spacing: -0.5px; }
+  .gdd-sub { font-size: 14px; color: #7C6853; margin-top: 6px; }
+  .badge-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  .badge { font-size: 11px; font-weight: 700; padding: 5px 12px; border-radius: 99px; text-transform: uppercase; }
+  .b-amber { background: #FAEEDA; color: #633806; }
+  .b-teal { background: #E1F5EE; color: #085041; }
+  .b-blue { background: #E6F1FB; color: #0C447C; }
+  .b-coral { background: #FAECE7; color: #712B13; }
+  .b-purple { background: #EEEDFE; color: #3C3489; }
+  .b-green { background: #EAF3DE; color: #27500A; }
+  .section { margin-bottom: 2.5rem; }
+  .section-title { font-size: 14px; font-weight: 700; color: #7C6853; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 1rem; padding-bottom: 6px; border-bottom: 1.5px solid #EEE; }
+  
+  .card { background: #FDFCFB; border: 1px solid #EAE6E1; border-radius: 8px; padding: 1.25rem; margin-bottom: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.01); }
+  .card-title { font-size: 16px; font-weight: 700; color: #4E320D; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+  .card-body { font-size: 14px; color: #5A5045; line-height: 1.6; }
+  .card-body b { font-weight: 700; color: #3C2505; }
+  
+  .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 12px; }
+  .grid3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+  .metric-card { background: #FAF6F0; border: 1px solid #EBDCC5; border-radius: 8px; padding: 16px; text-align: center; }
+  .metric-label { font-size: 12px; color: #7C6853; margin-bottom: 4px; font-weight: 600; }
+  .metric-val { font-size: 26px; font-weight: 800; color: #5C3C10; }
+  
+  .table-container { border: 1px solid #EAE6E1; border-radius: 8px; overflow: hidden; margin-bottom: 12px; background: white; }
+  table { width: 100%; font-size: 13px; border-collapse: collapse; table-layout: fixed; }
+  th { background: #F7F4EE; font-weight: 700; color: #5C3C10; padding: 10px 14px; text-align: left; font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase; border-bottom: 1px solid #EAE6E1; }
+  td { padding: 10px 14px; color: #4E4439; border-bottom: 1px solid #EAE6E1; vertical-align: top; line-height: 1.6; }
+  tr:last-child td { border-bottom: none; }
+  
+  .nav-tabs { display: flex; gap: 6px; margin-bottom: 1.5rem; flex-wrap: wrap; border-bottom: 1px solid #EEE; padding-bottom: 10px; }
+  .tab { padding: 8px 16px; font-size: 13px; border-radius: 6px; cursor: pointer; border: 1px solid #EAE6E1; color: #7C6853; background: white; transition: all 0.15s; font-weight: 500; }
+  .tab.active { background: #FAEEDA; color: #633806; border-color: #FAC775; font-weight: 700; box-shadow: 0 2px 4px rgba(250, 199, 117, 0.2); }
+  .tab:hover:not(.active) { background: #faf6f0; }
+  
+  .panel { display: none; }
+  .panel.active { display: block; }
+  .formula-box { background: #F7F4EE; border-radius: 6px; padding: 12px; font-family: monospace; font-size: 13px; color: #5C3C10; margin: 8px 0; border-left: 4px solid #EF9F27; line-height: 1.4; }
+  
+  .vitals-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .vital { border-radius: 8px; padding: 14px; text-align: center; border: 1px solid rgba(0,0,0,0.05); }
+  .vital-icon { font-size: 26px; margin-bottom: 6px; }
+  .vital-name { font-size: 14px; font-weight: 700; }
+  .vital-desc { font-size: 11px; margin-top: 4px; line-height: 1.4; }
+
+  /* UI MOCKUPS STYLES */
+  .mockup-container { background: #1a1a1c; border-radius: 8px; border: 4px solid #333; padding: 15px; color: white; font-family: -apple-system, sans-serif; position: relative; overflow: hidden; margin-bottom: 2rem; box-shadow: 0 8px 24px rgba(0,0,0,0.15); }
+  
+  /* HUD Mockup */
+  .hud-screen { height: 350px; background: radial-gradient(circle, #3a2e1d 0%, #151412 100%); display: flex; flex-direction: column; justify-content: space-between; padding: 12px; position: relative; }
+  .hud-top { display: flex; justify-content: space-between; align-items: flex-start; width: 100%; }
+  
+  .hud-vitals { display: flex; gap: 12px; background: rgba(0,0,0,0.6); padding: 8px 12px; border-radius: 20px; border: 1px solid #444; }
+  .hud-vital-item { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: bold; }
+  .hud-bar-bg { width: 60px; height: 10px; background: #333; border-radius: 5px; overflow: hidden; border: 1px solid #555; }
+  .hud-bar-fill { height: 100%; border-radius: 5px; }
+  .sat-fill { background: #ffcc00; width: 85%; }
+  .mor-fill { background: #00ffaa; width: 60%; }
+  
+  .hud-clean-widget { display: flex; flex-direction: column; align-items: center; background: rgba(0,0,0,0.6); padding: 6px 12px; border-radius: 12px; border: 1px solid #444; }
+  .hud-clean-title { font-size: 9px; text-transform: uppercase; color: #aaa; margin-bottom: 2px; }
+  .hud-clean-bar { width: 120px; height: 6px; background: #222; border-radius: 3px; overflow: hidden; }
+  .hud-clean-fill { height: 100%; background: linear-gradient(90deg, #ff3333, #00ffaa); width: 88%; }
+  
+  .hud-trend-box { background: rgba(250, 199, 117, 0.15); border: 1px solid #fac775; padding: 8px 12px; border-radius: 12px; color: #fac775; text-align: right; max-width: 220px; }
+  .hud-trend-title { font-size: 10px; font-weight: bold; text-transform: uppercase; margin-bottom: 2px; }
+  .hud-trend-desc { font-size: 11px; font-weight: bold; color: white; }
+  
+  .hud-center-prompts { align-self: center; text-align: center; margin-top: 40px; }
+  .hud-prompt { background: rgba(0,0,0,0.85); border: 2px solid #fac775; padding: 10px 20px; border-radius: 8px; font-size: 14px; font-weight: bold; color: #fac775; display: inline-block; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+  
+  .hud-bottom { display: flex; justify-content: space-between; align-items: flex-end; width: 100%; }
+  .hud-money { font-size: 24px; font-weight: 800; color: #00ffaa; text-shadow: 0 2px 4px rgba(0,0,0,0.5); background: rgba(0,0,0,0.6); padding: 4px 12px; border-radius: 8px; border: 1px solid #333; }
+  .hud-orders-list { background: rgba(0,0,0,0.6); border: 1px solid #444; border-radius: 8px; padding: 8px; font-size: 11px; width: 180px; }
+  .hud-orders-title { border-bottom: 1px solid #555; padding-bottom: 4px; margin-bottom: 4px; font-weight: bold; color: #fac775; }
+  .hud-order-item { display: flex; justify-content: space-between; margin-bottom: 2px; }
+
+  /* Tablet Mockup */
+  .tablet-mock { background: #2a2a2c; border: 8px solid #000; border-radius: 16px; width: 100%; max-width: 750px; margin: 0 auto; color: #333; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.25); }
+  .tablet-header-bar { height: 28px; background: #1e1e20; color: #888; display: flex; justify-content: space-between; align-items: center; padding: 0 16px; font-size: 11px; font-weight: bold; }
+  .tablet-app-container { background: #f5f3f0; height: 420px; display: flex; }
+  .tablet-sidebar { width: 70px; background: #e0dcd5; display: flex; flex-direction: column; align-items: center; padding-top: 15px; gap: 15px; border-right: 1px solid #ccc; }
+  .tablet-icon-btn { width: 44px; height: 44px; background: white; border-radius: 10px; border: 1px solid #bbb; display: flex; justify-content: center; align-items: center; font-size: 20px; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+  .tablet-icon-btn.active { background: #fac775; border-color: #EF9F27; }
+  .tablet-main-area { flex: 1; padding: 15px; display: flex; flex-direction: column; }
+  .tablet-title { font-size: 18px; font-weight: 800; color: #5c3c10; margin-bottom: 10px; border-bottom: 1px solid #e0dcd5; padding-bottom: 6px; }
+  .brew-layout { display: flex; gap: 12px; flex: 1; }
+  .brew-form { flex: 1.2; background: white; border: 1px solid #ddd; border-radius: 8px; padding: 12px; font-size: 12px; }
+  .form-group { margin-bottom: 10px; }
+  .form-group label { display: block; font-weight: bold; margin-bottom: 4px; color: #555; }
+  .form-group input[type="text"] { width: 100%; padding: 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px; }
+  .sliders-box { margin-top: 8px; }
+  .slider-item { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .slider-item span { width: 85px; font-weight: bold; color: #666; }
+  .slider-item input[type="range"] { flex: 1; }
+  .slider-val { width: 30px; text-align: right; font-weight: bold; color: #5c3c10; }
+  .packaging-select { display: flex; gap: 6px; margin-top: 4px; }
+  .pkg-btn { flex: 1; padding: 6px; border: 1px solid #ccc; border-radius: 4px; background: #fafafa; text-align: center; font-size: 11px; font-weight: bold; cursor: pointer; }
+  .pkg-btn.active { background: #633806; color: white; border-color: #633806; }
+  
+  .brew-preview { flex: 0.8; background: #faf9f6; border: 1px solid #ddd; border-radius: 8px; padding: 12px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; }
+  .bottle-visual-preview { width: 65px; height: 130px; background: #fdf5e6; border: 2px solid #5c3c10; border-radius: 6px; position: relative; margin-top: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .bottle-visual-preview::before { content: ""; width: 25px; height: 15px; background: #633806; position: absolute; top: -16px; border-radius: 3px; }
+  .bottle-label-preview { width: 100%; background: #EF9F27; color: white; font-size: 8px; font-weight: bold; text-align: center; padding: 4px 0; }
+  .brew-price-box { width: 100%; border-top: 1px solid #ddd; padding-top: 8px; text-align: center; }
+  .brew-cost-val { font-size: 16px; font-weight: 800; color: #085041; }
+  .brew-order-btn { width: 100%; background: #EF9F27; color: white; border: none; padding: 8px; border-radius: 4px; font-weight: bold; font-size: 12px; cursor: pointer; margin-top: 6px; }
+
+  /* Dialogue Box Mockup */
+  .dial-mock { background: rgba(0,0,0,0.9); border: 2px solid #444; border-radius: 8px; padding: 15px; display: flex; gap: 15px; color: white; height: 260px; max-width: 800px; margin: 0 auto; box-shadow: 0 6px 20px rgba(0,0,0,0.4); }
+  .dial-npc-part { flex: 1.1; display: flex; flex-direction: column; }
+  .dial-npc-title { font-size: 11px; text-transform: uppercase; color: #fac775; font-weight: bold; margin-bottom: 4px; }
+  .dial-npc-bubble { background: #222; border-radius: 8px; padding: 12px; font-size: 13px; line-height: 1.5; border: 1px solid #333; position: relative; flex: 1; }
+  .dial-npc-bubble b { color: #fac775; }
+  
+  .dial-label-part { flex: 0.9; background: white; border-radius: 6px; padding: 8px; color: #333; border: 2px dashed #EF9F27; display: flex; flex-direction: column; justify-content: space-between; }
+  .label-title { font-size: 12px; font-weight: 800; text-align: center; border-bottom: 2px solid #333; padding-bottom: 2px; }
+  .label-stat { font-size: 10px; display: flex; justify-content: space-between; margin-bottom: 2px; }
+  .label-stat b { font-weight: bold; color: #333; }
+  .label-footer { font-size: 9px; text-align: center; color: #888; border-top: 1px solid #ddd; padding-top: 2px; }
+  
+  .dial-options-part { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 6px; }
+  .dial-opt-btn { background: #333; border: 1px solid #555; border-radius: 4px; padding: 8px 12px; font-size: 11px; text-align: left; color: white; cursor: pointer; transition: background 0.15s; font-weight: 500; }
+  .dial-opt-btn:hover { background: #fac775; color: #333; border-color: #fac775; }
+  .dial-opt-btn.has-req { border-left: 4px solid #00ffaa; }
+  .dial-opt-btn.desp { border-left: 4px solid #ff3333; }
+
+  /* Strange States Mockups Grid */
+  .state-effects-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin-top: 1rem; }
+  .state-eff-card { height: 120px; border-radius: 8px; border: 2px solid #fac775; position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 12px; text-align: center; }
+  
+  .eff-sugar { background: radial-gradient(circle, rgba(250, 199, 117, 0.2) 0%, rgba(26,26,28,1) 100%); border-color: #ffcc00; }
+  .eff-paranoia { background: linear-gradient(135deg, #111 0%, #222 100%); border-color: #ff3333; filter: grayscale(1); }
+  .censor-bar { background: black; color: red; font-size: 8px; font-weight: bold; padding: 2px 6px; transform: rotate(-5deg); margin-top: 5px; border: 1px solid red; }
+  
+  .eff-depr { background: radial-gradient(circle, rgba(0, 150, 255, 0.15) 0%, rgba(26,26,28,1) 100%); border-color: #00aaff; }
+  .rain-cloud { font-size: 24px; position: absolute; top: 10px; animation: bounce 2s infinite ease-in-out; }
+  
+  @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+</style>
+</head>
+<body>
+
+<div class="gdd">
+  <div class="gdd-header">
+    <div class="gdd-title">Lemon Empire — Drink Shop Simulator GDD</div>
+    <div class="gdd-sub">v0.4 · Дизайн-документ · Симулятор Магазина Напитков (Co-op 1–4 игрока)</div>
+    <div class="badge-row">
+      <span class="badge b-amber">Бизнес-Симулятор</span>
+      <span class="badge b-teal">Co-op 1-4 players</span>
+      <span class="badge b-blue">Supermarket Style</span>
+      <span class="badge b-coral">Конструктор Тары</span>
+      <span class="badge b-purple">Официанты и Касса</span>
+      <span class="badge b-green">Грязь и Уборка</span>
+    </div>
+  </div>
+
+  <div class="nav-tabs">
+    <div class="tab" onclick="switchTab('overview')">Обзор</div>
+    <div class="tab" onclick="switchTab('layout')">Помещение и Логистика</div>
+    <div class="tab" onclick="switchTab('ordering')">Заказ и Конструктор</div>
+    <div class="tab" onclick="switchTab('shop')">Выкладка и Чистота</div>
+    <div class="tab" onclick="switchTab('dialogues')">Диалоги и Официанты</div>
+    <div class="tab" onclick="switchTab('upgrades')">Улучшения</div>
+    <div class="tab" onclick="switchTab('states')">Состояния и Vitals</div>
+    <div class="tab" onclick="switchTab('progression')">Тренды и Демография</div>
+    <div class="tab" onclick="switchTab('tech')">Техстек</div>
+    <div class="tab active" onclick="switchTab('ui')">UI & Интерфейсы</div>
+  </div>
+
+  <!-- OVERVIEW -->
+  <div id="panel-overview" class="panel">
+    <div class="section">
+      <div class="section-title">Концепция игры</div>
+      <div class="card">
+        <div class="card-title">🛍️ Симулятор Магазина Напитков</div>
+        <div class="card-body">Игроки (от 1 до 4 человек) — совладельцы специализированного магазина крафтовых напитков. Никакого ручного выжимания лимонов и QTE-станков. Вместо этого — чистый кооперативный хаос в стиле Supermarket Simulator: заказывайте уникальные партии напитков через планшет, конструируйте состав и этикетку, раскладывайте бутылки по холодильникам, следите за чистотой торгового зала, принимайте заказы от сидячих гостей и обслуживайте клиентов у прилавка.</div>
+      </div>
+      <div class="grid2">
+        <div class="card">
+          <div class="card-title">🤝 Кооперативное Разделение Труда</div>
+          <div class="card-body">
+            В лобби до 4-х игроков каждый может выбрать себе роль на лету:
+            <ul>
+              <li><b>Бармен/Кассир</b>: стоит за стойкой, принимает заказы, общается и торгуется с клиентами.</li>
+              <li><b>Официант</b>: принимает заказы у гостей за столиками и приносит их бармену, обслуживает сидячую зону.</li>
+              <li><b>Товаровед</b>: заказывает партии, разгружает коробки и следит за выкладкой.</li>
+              <li><b>Уборщик</b>: бегает со шваброй, следит за грязными следами и вовремя выносит пустую тару на мусорку.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">🎮 Геймплейный Фокус</div>
+          <div class="card-body">Конструирование уникальных шипучек и алкоголя на планшете, подбор трендовой тары под демографию дня, расстановка цен, борьба с грязью и кооперативная беготня между складом, прилавком и столиками клиентов.</div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="section">
+      <div class="section-title">Ключевые метрики</div>
+      <div class="grid3">
+        <div class="metric-card"><div class="metric-label">Сетевой режим</div><div class="metric-val">1–4 игрока (P2P)</div></div>
+        <div class="metric-card"><div class="metric-label">Кастомизация тары</div><div class="metric-val">3 вида бутылок</div></div>
+        <div class="metric-card"><div class="metric-label">Параметры напитка</div><div class="metric-val">Сахар, Газ, Алкоголь</div></div>
+        <div class="metric-card"><div class="metric-label">Масштабирование</div><div class="metric-val">Столы + Официанты</div></div>
+        <div class="metric-card"><div class="metric-label">Система Vitals</div><div class="metric-val">🍔 Сытость, 😤 Мораль</div></div>
+        <div class="metric-card"><div class="metric-label">Чистота магазина</div><div class="metric-val">Мусор + Грязные следы</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LAYOUT -->
+  <div id="panel-layout" class="panel">
+    <div class="section">
+      <div class="section-title">План Помещения и Логистика</div>
+      <div class="card">
+        <div class="card-body">
+          Игровая зона разделена на чёткие функциональные комнаты, окруженные неигровыми тротуарами (залитыми чёрным цветом):
+          <br><br>
+          <ul>
+            <li>🚪 <b>Основное помещение</b> (Старт): Здесь стоит <b>Стойка (прилавок)</b> кассира. Сюда через первоначальный вход (снизу справа) заходят первые клиенты. Пространства мало, поэтому все клиенты покупают напитки исключительно <i>«на вынос» (to go)</i>.</li>
+            <li>🏪 <b>Зал улучшений</b> (Слева): Открывается при покупке расширения торговой площади. Вместе с ним открывается левый парадный Вход. В этом зале игрок может ставить <b>Столики для гостей</b>, превращая магазин в уютный бар/лаундж.</li>
+            <li>📦 <b>Склад основной</b>: Помещение наверху торгового зала. Содержит стеллажи для хранения запасов коробок.</li>
+            <li>🪜 <b>Склады улучшений (1, 2, 3)</b>: Серия комнат слева от основного склада, открывающаяся поочередно для масштабного хранения.</li>
+            <li>🚚 <b>Зона получения товара</b>: Площадка на улице справа от коридора. Сюда служба доставки сбрасывает заказанные коробки с напитками.</li>
+            <li>🗑️ <b>Мусорка для коробок</b>: Бак на улице чуть левее зоны получения. Сюда игроки обязаны выбрасывать пустые коробки, чтобы избежать штрафов и грязи.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ORDERING -->
+  <div id="panel-ordering" class="panel">
+    <div class="section">
+      <div class="section-title">Планшет: Дизайн Напитка и Тары</div>
+      <div class="card">
+        <div class="card-title">📱 Конструктор Партии</div>
+        <div class="card-body">
+          Игрок создаёт рецепт напитка на планшете перед заказом:
+          <br><br>
+          1. <b>Название напитка</b>: Задается вручную (будет напечатано на этикетке).
+          <br>
+          2. <b>Параметры состава (0% - 100%)</b>:
+          <ul>
+            <li><b>Сахар (% Sugar)</b></li>
+            <li><b>Газированность (% Carbonation)</b></li>
+            <li><b>Алкоголь (% Alcohol)</b></li>
+          </ul>
+          3. <b>Выбор Типа Тары (Bottle/Can Style)</b>:
+          <ul>
+            <li>🥤 <b>Пластиковая бутылка</b>: Дешевая (Base_Cost + 0$), но снижает привлекательность для Хипстеров и VIP на 40%.</li>
+            <li>🥫 <b>Алюминиевая банка</b>: Средняя цена (+1.5$ к себестоимости). Отлично подходит для сильногазированных напитков (Gas > 50%).</li>
+            <li>🍾 <b>Крафтовая стеклянная бутылка</b>: Дорогая тара (+3.5$ к себестоимости). **Обязательна для привлечения Хипстеров** и VIP-клиентов, повышает готовность NPC переплачивать.</li>
+          </ul>
+        </div>
+      </div>
+      
+      <div class="card">
+        <div class="card-title">💰 Расчет Себестоимости Коробки</div>
+        <div class="formula-box">
+          Base_Cost = 8$ (на коробку из 6 шт)<br>
+          Packaging_Premium = Пластик (0$) / Банка (9$) / Стекло (21$)<br>
+          Liquid_Cost = (Sugar * 0.05$) + (Carbonation * 0.08$) + (Alcohol * 0.35$)<br>
+          Total_Cost_Per_Box = Base_Cost + Packaging_Premium + (Liquid_Cost * 6)
+        </div>
+        <div class="card-body">
+          Крафтовое стекло и алкоголь увеличивают закупочную цену коробки в разы, но позволяют ставить огромную розничную наценку для элиты.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SHOP -->
+  <div id="panel-shop" class="panel">
+    <div class="section">
+      <div class="section-title">Выкладка, Охлаждение и Чистота</div>
+      <div class="grid2">
+        <div class="card">
+          <div class="card-title">🌡️ Температурный режим полок</div>
+          <div class="card-body">
+            <ul>
+              <li><b>Теплый стеллаж</b>: Напитки хранятся при комнатной температуре.</li>
+              <li><b>Холодильник</b>: Постепенно охлаждает напитки до 5°C. Холодный напиток позволяет поднять наценку на 30% без потери лояльности! Потребляет электроэнергию каждую игровую неделю.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">🧹 Механика Загрязнения и Уборки</div>
+          <div class="card-body">
+            * <b>Грязные следы</b>: Клиенты с улицы заносят грязь (особенно в дождливую погоду). Грязь снижает привлекательность магазина.
+            * <b>Мусор</b>: Если игрок бросает пустые распакованные коробки посреди торгового зала вместо того, чтобы отнести их в **уличную мусорку**, это стремительно накапливает показатель беспорядка.
+            * <b>Швабра (Broom)</b>: Специальный инструмент. Игрок берет швабру в руки и зажимает кнопку мыши на грязных пятнах, чтобы вытереть их. Чистый магазин = +15% к времени ожидания клиентов в очереди.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DIALOGUES -->
+  <div id="panel-dialogues" class="panel">
+    <div class="section">
+      <div class="section-title">Диалоги и Официанты (Кооперативный геймплей)</div>
+      <div class="card">
+        <div class="card-title">🤵 Официанты и столики для гостей</div>
+        <div class="card-body">
+          При расширении магазина и открытии левого зала, игроки могут расставлять столики.
+          <br><br>
+          1. NPC заходят через левый вход и садятся за свободные столы.
+          <br>
+          2. **Игрок-официант** (или нанятый NPC-официант) подходит к столу с блокнотом и принимает у них устный заказ.
+          <br>
+          3. Официант физически (или через интерфейс) приносит список заказов **Игроку-бармену**, стоящему у кассовой стойки основного зала.
+          <br>
+          4. Бармен собирает нужные бутылки с полок/холодильников и выдает их официанту.
+          <br>
+          5. Официант приносит бутылки к столику. NPC читает этикетку, радуется/ворчит и оставляет щедрые чаевые!
+          <br>
+          *Это ключевой кооперативный элемент, делающий игру весёлой при игре вчетвером.*
+        </div>
+      </div>
+
+      <div class="section-title">Процедурная Генерация диалогов у стойки</div>
+      <div class="card">
+        <div class="card-body">
+          Когда бутылка ставится на кассу, NPC крутит её и **читает этикетку**.
+          Фраза генерируется процедурно на основе соответствия состава заказу и типу выбранной тары:
+          <div class="formula-box">Фраза = [Оценка Тары] + [Мнение о составе на этикетке] + [Вердикт о торге]</div>
+          
+          <b>Пример (Хипстер на кассе):</b>
+          <br>
+          * <i>Оценка тары</i>: «Хм, стеклянная бутылочка крафтового вида? Достойно моего Инстаграма.»
+          * <i>Мнение о составе</i>: «Ого, всего 3% алкоголя и 25% сахара — органический баланс!»
+          * <i>Вердикт</i>: «За такое не жалко отдать и 25 долларов! Беру!»
+          <br><br>
+          <b>Пример (Хипстер видит пластиковую бутылку):</b>
+          <br>
+          * <i>Реплика</i>: «Что?! Крафтовый напиток в **дешевом пластике**? Вы загрязняете планету! Я не буду это пить, даже если вы мне приплатите!» (NPC уходит, бросая товар).
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- UPGRADES -->
+  <div id="panel-upgrades" class="panel">
+    <div class="section">
+      <div class="section-title">Вкладка Апгрейдов: «Ремонт и Расширение»</div>
+      <div class="grid2">
+        <div class="card">
+          <div class="card-title">🧱 Расширение площадей</div>
+          <div class="card-body">
+            <ul>
+              <li><b>Зал улучшений (Левое крыло)</b>: Позволяет разместить до 5 гостевых столиков для сидячей зоны.</li>
+              <li><b>Склады улучшений (1, 2, 3)</b>: Расширяют складские площади для хранения коробок.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">⚡ Оборудование и Автоматизация</div>
+          <div class="card-body">
+            <ul>
+              <li><b>Двойные Холодильники</b>: Быстро охлаждают напитки, повышая их розничную стоимость.</li>
+              <li><b>Премиум-полки</b>: Экономят место, вмещая тройной объем бутылок.</li>
+              <li><b>Официант-помощник (NPC)</b>: Автоматически обслуживает 1 столик, разгружая игроков.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:12px;">
+        <div class="card-title">✨ Косметика и Атмосфера</div>
+        <div class="card-body">
+          * <b>Неоновые вывески</b>: Привлекают на 40% больше клиентов (Хипстеров и Тусовщиков).
+          * <b>Музыкальный автомат (Jukebox)</b>: Замедляет падение шкалы терпения клиентов в очереди на кассе на 50%.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STATES -->
+  <div id="panel-states" class="panel">
+    <div class="section">
+      <div class="section-title">Показатели игрока и их восполнение</div>
+      <div class="vitals-grid">
+        <div class="vital" style="background:#FAEEDA; color:#412402;">
+          <div class="vital-icon">🍔</div>
+          <div class="vital-name">Сытость (Satiety)</div>
+          <div class="vital-desc">Снижается от бега и переноски тяжелых коробок. При голоде скорость игрока падает на 35%. <br><b>Как восполнить?</b> Купить шоколадный батончик/чипсы в торговом автомате в углу магазина.</div>
+        </div>
+        <div class="vital" style="background:#E1F5EE; color:#04342C;">
+          <div class="vital-icon">😤</div>
+          <div class="vital-name">Мораль (Morale)</div>
+          <div class="vital-desc">Падает от сбежавших клиентов и скопившейся грязи. Высокая мораль открывает харизматичный торг. <br><b>Как восполнить?</b> Выпить сладкую газировку со своей полки, отдохнуть на диванчике или включить музыку в Jukebox.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section" style="margin-top:1.5rem;">
+      <div class="section-title">Странные Состояния продавца</div>
+      <div class="table-container">
+        <table>
+          <tr>
+            <th style="width:20%">Состояние</th>
+            <th style="width:25%">Триггер</th>
+            <th>Геймплейный эффект</th>
+            <th>Юмор / Визуальный эффект</th>
+          </tr>
+          <tr>
+            <td><b>Сахарный кайф</b></td>
+            <td>Игрок сам выпил 3 сладкие шипучки подряд</td>
+            <td>Скорость бега ×2, но в глазах игрока все цены на полках умножаются на 10.</td>
+            <td>Экран пульсирует желтым цветом, лимоны летают вокруг головы.</td>
+          </tr>
+          <tr>
+            <td><b>Кофеиновый коллапс</b></td>
+            <td>Сытость игрока держится на 0% более 3-х минут</td>
+            <td>Игрок засыпает прямо на ходу на 3-5 секунд (управление блокируется).</td>
+            <td>Над игроком значки ZZZ, камера кренится набок.</td>
+          </tr>
+          <tr>
+            <td><b>Лимонная паранойя</b></td>
+            <td>3 проваленных торга подряд у прилавка</td>
+            <td>Все NPC на кассе переименовываются в «Шпион конкурентов», доступны только агрессивные варианты ответов.</td>
+            <td>Тревожная музыка, глаза клиентов закрыты цензурной плашкой.</td>
+          </tr>
+          <tr>
+            <td><b>Финансовая депрессия</b></td>
+            <td>Баланс кассы упал ниже 50$</td>
+            <td>Камера опускается ниже (игрок сутулится). Разблокируется отчаянная реплика «Расплакаться».</td>
+            <td>Над головой игрока висит персональная дождевая туча.</td>
+          </tr>
+          <tr>
+            <td><b>Санитарная паника</b></td>
+            <td>Уровень загрязнения зала превысил 80%</td>
+            <td>Скорость бега со шваброй ×2, уборка грязных следов происходит мгновенно. Длится 2 минуты.</td>
+            <td>Игрок краснеет, звучит паническая быстрая музыка.</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROGRESSION -->
+  <div id="panel-progression" class="panel">
+    <div class="section">
+      <div class="section-title">Тренды рынка и архетипы покупателей</div>
+      <div class="card">
+        <div class="card-title">📈 Ежедневные тренды рынка</div>
+        <div class="card-body">
+          Популярность напитков регулируется суточными событиями в газете на планшете:
+          <ul>
+            <li>☀️ <b>«Аномальная жара»</b>: Спрос на холодные сильногазированные банки взлетает в 4 раза.</li>
+            <li>🎉 <b>«Пятничная тусовка»</b>: Наплыв Тусовщиков. Спрос на крепкие напитки (Алкоголь > 15%) вырастает в 5 раз.</li>
+            <li>🧸 <b>«Детский день»</b>: Наплыв детей. Хотят только пластиковые бутылки с сахаром > 70% и 0% алкоголя. За попытку продать алкоголь ребенку — штраф 500$!</li>
+            <li>🏃‍♂️ <b>«Городской марафон»</b>: Наплыв Спортсменов. Ищут изотоники в алюминиевых банках (сахар < 15%, 0% алкоголя).</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TECH -->
+  <div id="panel-tech" class="panel">
+    <div class="section">
+      <div class="section-title">Технический стек и Сетевая архитектура</div>
+      <div class="card">
+        <div class="card-title">🛠️ Выбранный Технический Стек</div>
+        <div class="card-body">
+          <ul>
+            <li><b>Сетевой Движок</b>: Unity Netcode for GameObjects (NGO) — стандартная библиотека авторитета сервера-хоста.</li>
+            <li><b>Транспортный уровень</b>: Unity Transport Package (UTP) для LAN / IP-подключения на этапе разработки, с возможностью миграции на Facepunch.Steamworks (Steam P2P) для релиза.</li>
+            <li><b>Экономическая модель</b>: Общий кошелек (Shared Wallet) через `NetworkVariable<int> Balance` с авторитарным серверным списанием и лимитами на траты.</li>
+            <li><b>Синхронизация переноса коробок (Physics Sync)</b>: Передача Ownership (авторитета) клиенту при поднятии объекта (`PlayerCarry`), локальное отключение Rigidbody/Collider, синхронизация через IK, с возвратом авторитета серверу при падении/броске. Это исключает сетевое дрожание (jitter) физических объектов.</li>
+            <li><b>Система сохранений</b>: Локальная сериализация в JSON на сервере-хосте (`SaveSystem.cs`). Сохраняет баланс кошелька, рецепты, апгрейды и точные позиции выложенных товаров.</li>
+            <li><b>Служба Уборки</b>: Грязь синхронизируется как сетевые префабы с `NetworkObject`. Очистка отправляет `CleanSpotServerRpc` для деспавна объекта на всех клиентах.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- UI & MOCKUPS -->
+  <div id="panel-ui" class="panel active">
+    <div class="section">
+      <div class="section-title">Визуализация Интерфейсов (UI Mockups)</div>
+      
+      <!-- HUD Mockup -->
+      <div class="card">
+        <div class="card-title">🎮 1. Игровой HUD (Экран Продавца/Официанта)</div>
+        <div class="card-body" style="margin-bottom: 10px;">Элементы управления сытостью, моралью, чистотой зала, кошельком, активными заказами со столов и текущим трендом.</div>
+        <div class="mockup-container">
+          <div class="hud-screen">
+            <div class="hud-top">
+              <div class="hud-vitals">
+                <div class="hud-vital-item">
+                  <span>🍔</span>
+                  <div class="hud-bar-bg"><div class="hud-bar-fill sat-fill"></div></div>
+                  <span>85%</span>
+                </div>
+                <div class="hud-vital-item">
+                  <span>😤</span>
+                  <div class="hud-bar-bg"><div class="hud-bar-fill mor-fill"></div></div>
+                  <span>60%</span>
+                </div>
+              </div>
+              <div class="hud-clean-widget">
+                <div class="hud-clean-title">Чистота торгового зала</div>
+                <div class="hud-clean-bar"><div class="hud-clean-fill"></div></div>
+              </div>
+              <div class="hud-trend-box">
+                <div class="hud-trend-title">Тренд Дня</div>
+                <div class="hud-trend-desc">☀️ Аномальная Жара (Банки x4)</div>
+              </div>
+            </div>
+            
+            <div class="hud-center-prompts">
+              <div class="hud-prompt">[E] Подать "Освежающий Лимон" на прилавок</div>
+            </div>
+            
+            <div class="hud-bottom">
+              <div class="hud-money">$1,245.50</div>
+              <div class="hud-orders-list">
+                <div class="hud-orders-title">Заказы Гостей (Официант)</div>
+                <div class="hud-order-item"><span>Стол 1: Лимонад (Стекло)</span> <span>⏳ 80с</span></div>
+                <div class="hud-order-item"><span>Стол 2: СпортИзотоник (Банка)</span> <span>⏳ 120с</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tablet Mockup -->
+      <div class="card">
+        <div class="card-title">📱 2. Планшет "LemonOS" (Приложение "BrewCraft" - Конструктор)</div>
+        <div class="card-body" style="margin-bottom: 10px;">Интерфейс кастомизации состава напитка, выбора типа тары и мгновенной закупки партии коробок.</div>
+        <div class="tablet-mock">
+          <div class="tablet-header-bar">
+            <span>LemonOS v1.4</span>
+            <span>Пятница, 18:32 | Баланс: $1245.50 | 📶 UTP Connect</span>
+          </div>
+          <div class="tablet-app-container">
+            <div class="tablet-sidebar">
+              <div class="tablet-icon-btn active">🧪</div>
+              <div class="tablet-icon-btn">🏪</div>
+              <div class="tablet-icon-btn">📈</div>
+            </div>
+            <div class="tablet-main-area">
+              <div class="tablet-title">BrewCraft — Конструктор Напитков</div>
+              <div class="brew-layout">
+                <div class="brew-form">
+                  <div class="form-group">
+                    <label>Название напитка</label>
+                    <input type="text" value="Ягодный Взрыв" readonly>
+                  </div>
+                  <div class="form-group">
+                    <label>Тип тары (Packaging)</label>
+                    <div class="packaging-select">
+                      <div class="pkg-btn">Пластик</div>
+                      <div class="pkg-btn">Банка</div>
+                      <div class="pkg-btn active">Крафт. Стекло</div>
+                    </div>
+                  </div>
+                  <div class="sliders-box">
+                    <label style="font-weight: bold; color: #555; display: block; margin-bottom: 4px;">Состав жидкости</label>
+                    <div class="slider-item">
+                      <span>🍬 Сахар</span>
+                      <input type="range" min="0" max="100" value="45" disabled>
+                      <span class="slider-val">45%</span>
+                    </div>
+                    <div class="slider-item">
+                      <span>💨 Газ</span>
+                      <input type="range" min="0" max="100" value="80" disabled>
+                      <span class="slider-val">80%</span>
+                    </div>
+                    <div class="slider-item">
+                      <span>🍺 Алкоголь</span>
+                      <input type="range" min="0" max="100" value="4" disabled>
+                      <span class="slider-val">4%</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="brew-preview">
+                  <div style="font-weight: bold; color: #633806; font-size: 11px;">Визуальный Превью</div>
+                  <div class="bottle-visual-preview">
+                    <div class="bottle-label-preview">ЯГОДНЫЙ ВЗРЫВ</div>
+                  </div>
+                  <div class="brew-price-box">
+                    <div style="font-size: 9px; color: #888;">Себестоимость коробки (6 шт)</div>
+                    <div class="brew-cost-val">$32.80</div>
+                    <button class="brew-order-btn" disabled>Заказать партию</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dialogue Mockup -->
+      <div class="card" style="margin-top: 1.5rem;">
+        <div class="card-title">🗣️ 3. Интерфейс Торговли / Расчета (Кассовый прилавок)</div>
+        <div class="card-body" style="margin-bottom: 10px;">NPC изучает этикетку товара перед кассой и открывает интерактивные возможности торга для продавца.</div>
+        <div class="dial-mock">
+          <div class="dial-npc-part">
+            <div class="dial-npc-title">Архетип: Хипстер (Иван)</div>
+            <div class="dial-npc-bubble">
+              Хм, смотрю на этикетку <b>"Ягодный Взрыв"</b>... Тара из <b>крафтового стекла</b>, это экологично. Всего <b>4% алкоголя</b> и умеренный сахар (<b>45%</b>) — неплохой крафт. Но цена <b>$18.00</b>?
+            </div>
+          </div>
+          
+          <div class="dial-label-part">
+            <div class="label-title">Ягодный Взрыв</div>
+            <div>
+              <div class="label-stat">Тара: <b>Стекло</b></div>
+              <div class="label-stat">Сахар: <b>45%</b></div>
+              <div class="label-stat">Газ: <b>80%</b></div>
+              <div class="label-stat">Алкоголь: <b>4%</b></div>
+              <div class="label-stat">Темп.: <b style="color: #0088ff;">6°C (Холод)</b></div>
+            </div>
+            <div class="label-footer">ООО "Лемон Импайр"</div>
+          </div>
+          
+          <div class="dial-options-part">
+            <button class="dial-opt-btn">🟢 Продать за полную цену ($18.00)</button>
+            <button class="dial-opt-btn">🟡 Предложить скидку 20% ($14.40)</button>
+            <button class="dial-opt-btn has-req">✨ Харизматичное Убеждение (Требует Мораль > 70%)</button>
+            <button class="dial-opt-btn desp" style="opacity: 0.5;" disabled>💧 Расплакаться (Неактивно)</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Screen Overlays Grid -->
+      <div class="card" style="margin-top: 1.5rem;">
+        <div class="card-title">🎨 4. Экранные эффекты "Странных состояний" (Strange States Overlays)</div>
+        <div class="card-body">Искажения экрана, влияющие на геймплей игрока.</div>
+        <div class="state-effects-grid">
+          <div class="state-eff-card eff-sugar">
+            <div style="font-weight: bold; color: #ffcc00; font-size: 13px;">🍋 Сахарный Кайф</div>
+            <div style="font-size: 10px; color: #ddd; margin-top: 4px;">Желтый пульсирующий оверлей, FOV ×2, искажение всех ценников.</div>
+          </div>
+          <div class="state-eff-card eff-paranoia">
+            <div style="font-weight: bold; color: #ff3333; font-size: 13px;">🕵️ Лимонная Паранойя</div>
+            <div style="font-size: 10px; color: #ddd; margin-top: 4px;">Нуарный серо-черный фильтр, оверлей очков-детектора.</div>
+            <span class="censor-bar">ШПИОН КОНКУРЕНТОВ</span>
+          </div>
+          <div class="state-eff-card eff-depr">
+            <div class="rain-cloud">🌧️</div>
+            <div style="font-weight: bold; color: #00aaff; font-size: 13px; margin-top: 25px;">🌧️ Финансовая Депрессия</div>
+            <div style="font-size: 10px; color: #ddd; margin-top: 4px;">Синий грустный виньетный фильтр, капли на экране.</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+function switchTab(id) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + id).classList.add('active');
+  event.currentTarget.classList.add('active');
+}
+</script>
+</body>
+</html>

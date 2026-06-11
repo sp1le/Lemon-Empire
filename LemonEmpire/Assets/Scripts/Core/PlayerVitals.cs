@@ -12,8 +12,6 @@ namespace LemonEmpire.Core
         [SerializeField] private float satiety = 100f;
         [Range(0f, 100f)]
         [SerializeField] private float morale = 100f;
-        [Range(-30f, 50f)]
-        [SerializeField] private float lookScore = 0f;
 
         [Header("Decay Settings")]
         [Tooltip("Satiety lost per real second. Day=20min → 100/1200=0.083")]
@@ -44,16 +42,6 @@ namespace LemonEmpire.Core
             set
             {
                 morale = Mathf.Clamp(value, 0f, 100f);
-                OnVitalsChanged?.Invoke();
-            }
-        }
-
-        public float LookScore
-        {
-            get => lookScore;
-            set
-            {
-                lookScore = Mathf.Clamp(value, -30f, 50f);
                 OnVitalsChanged?.Invoke();
             }
         }
@@ -92,19 +80,39 @@ namespace LemonEmpire.Core
 
         public float CalculateReaction(float quality)
         {
-            return (quality * 0.5f) + (lookScore * 0.3f) + UnityEngine.Random.Range(-20f, 20f);
+            return (quality * 0.5f) + UnityEngine.Random.Range(-20f, 20f);
+        }
+
+        /// <summary>Replenishes player satiety, clamped between 0 and 100.</summary>
+        public void ReplenishSatiety(float amount)
+        {
+            Satiety = Mathf.Clamp(Satiety + amount, 0f, 100f);
+        }
+
+        /// <summary>Replenishes player morale, clamped between 0 and 100.</summary>
+        public void ReplenishMorale(float amount)
+        {
+            Morale = Mathf.Clamp(Morale + amount, 0f, 100f);
         }
 
         /// <summary>Called on failed deals to penalize morale.</summary>
         public void OnDealFailed()
         {
             Morale -= 10f;
+            if (LemonEmpire.Player.PlayerStatusEffects.Instance != null)
+            {
+                LemonEmpire.Player.PlayerStatusEffects.Instance.NotifyDealFailed();
+            }
         }
 
         /// <summary>Called on successful deals to slightly boost morale.</summary>
         public void OnDealSuccess()
         {
             Morale += 3f;
+            if (LemonEmpire.Player.PlayerStatusEffects.Instance != null)
+            {
+                LemonEmpire.Player.PlayerStatusEffects.Instance.NotifyDealSuccess();
+            }
         }
     }
 }

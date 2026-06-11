@@ -28,46 +28,60 @@ namespace LemonEmpire.Player
             if (_animator == null || _playerCarry == null || !_animator.isHuman) return;
 
             // Optional: to use IK, the Animator Controller must have "IK Pass" enabled in settings for the Base Layer!
-            
+
             if (_playerCarry.IsCarrying && _playerCarry.CarriedItem != null)
             {
-                var holdPoint = _playerCarry.CarriedItem.transform;
+                var carriedTransform = _playerCarry.CarriedItem.transform;
 
-                // Turn on IK IK interpolation
+                // Максимальный вес IK для точного позиционирования
                 _animator.SetIKPositionWeight(AvatarIKGoal.LeftHand, 1f);
                 _animator.SetIKPositionWeight(AvatarIKGoal.RightHand, 1f);
+                _animator.SetIKRotationWeight(AvatarIKGoal.LeftHand, 1f);
+                _animator.SetIKRotationWeight(AvatarIKGoal.RightHand, 1f);
 
-                // Find the local bottom of the box without relying on world physics updates
-                float boxBottomOffsetY = -0.3f; // Default fallback
+                // Находим размеры ящика
+                float boxBottomOffsetY = -0.3f;
+                float boxWidth = 0.5f;
+
                 var boxCol = _playerCarry.CarriedItem.GetComponent<BoxCollider>();
                 if (boxCol != null)
                 {
-                    // Perfectly calculates the distance to the bottom floor of the box based on its local center and size
-                    boxBottomOffsetY = (boxCol.center.y - boxCol.size.y * 0.5f) * holdPoint.localScale.y;
+                    // Нижняя грань ящика
+                    boxBottomOffsetY = (boxCol.center.y - boxCol.size.y * 0.5f) * carriedTransform.localScale.y;
+                    // Ширина ящика для расстановки рук
+                    boxWidth = boxCol.size.x * carriedTransform.localScale.x;
                 }
-                
-                // We add a tiny bit (0.05) so hands clip slightly into the bottom instead of hovering below
-                Vector3 bottomCenter = holdPoint.position + transform.up * (boxBottomOffsetY + 0.05f);
 
-                // Place hands UNDER the box
-                // 0.25f apart from center, 0.2f forward into the box floor
-                Vector3 leftHandPos = bottomCenter - transform.right * 0.25f + transform.forward * 0.2f;
-                Vector3 rightHandPos = bottomCenter + transform.right * 0.25f + transform.forward * 0.2f;
+                // Точка на дне ящика (центр)
+                Vector3 boxBottom = carriedTransform.position + carriedTransform.up * boxBottomOffsetY;
+
+                // Руки держат ящик снизу по бокам
+                float handSpacing = Mathf.Max(0.2f, boxWidth * 0.4f); // Минимум 20см между руками
+
+                Vector3 leftHandPos = boxBottom - carriedTransform.right * handSpacing;
+                Vector3 rightHandPos = boxBottom + carriedTransform.right * handSpacing;
+
+                // Руки чуть впереди для естественного хвата
+                Vector3 forwardOffset = carriedTransform.forward * 0.1f;
+                leftHandPos += forwardOffset;
+                rightHandPos += forwardOffset;
 
                 _animator.SetIKPosition(AvatarIKGoal.LeftHand, leftHandPos);
                 _animator.SetIKPosition(AvatarIKGoal.RightHand, rightHandPos);
 
-                // Force wrist rotation so palms face UP (like holding a tray)
-                _animator.SetIKRotationWeight(AvatarIKGoal.LeftHand, 1f);
-                _animator.SetIKRotationWeight(AvatarIKGoal.RightHand, 1f);
-                
-                // We point the fingers forward and the palm upward
-                _animator.SetIKRotation(AvatarIKGoal.LeftHand, Quaternion.LookRotation(transform.forward, transform.up));
-                _animator.SetIKRotation(AvatarIKGoal.RightHand, Quaternion.LookRotation(transform.forward, transform.up));
+                // Ладони смотрят вверх (держат снизу)
+                Quaternion handRotation = Quaternion.LookRotation(carriedTransform.forward, carriedTransform.up);
+                _animator.SetIKRotation(AvatarIKGoal.LeftHand, handRotation);
+                _animator.SetIKRotation(AvatarIKGoal.RightHand, handRotation);
+
+                // Debug визуализация
+                Debug.DrawLine(leftHandPos, rightHandPos, Color.green);
+                Debug.DrawLine(boxBottom, leftHandPos, Color.yellow);
+                Debug.DrawLine(boxBottom, rightHandPos, Color.yellow);
             }
             else
             {
-                // Unclasp hands
+                // Отпускаем руки
                 _animator.SetIKPositionWeight(AvatarIKGoal.LeftHand, 0f);
                 _animator.SetIKPositionWeight(AvatarIKGoal.RightHand, 0f);
                 _animator.SetIKRotationWeight(AvatarIKGoal.LeftHand, 0f);

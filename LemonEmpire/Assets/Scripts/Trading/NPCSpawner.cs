@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.AI;
 using LemonEmpire.Core;
+using LemonEmpire.Production;
 
 namespace LemonEmpire.Trading
 {
@@ -16,9 +17,10 @@ namespace LemonEmpire.Trading
         [SerializeField] private float playerProximityRadius = 15f;
 
         [Header("References")]
-        [SerializeField] private TradeStand targetStand;
+        [SerializeField] private ServiceCounter targetCounter;
         [SerializeField] private Transform exitPoint;
         [SerializeField] private GameObject npcPrefab;
+        [SerializeField] private Material[] customerSkins;
 
         private float _spawnTimer;
         private int _currentNPCCount;
@@ -28,8 +30,8 @@ namespace LemonEmpire.Trading
         {
             _spawnTimer = spawnInterval * 0.5f;
 
-            if (targetStand == null)
-                targetStand = FindFirstObjectByType<TradeStand>();
+            if (targetCounter == null)
+                targetCounter = FindFirstObjectByType<ServiceCounter>();
 
             var player = FindFirstObjectByType<Player.PlayerController>();
             if (player != null)
@@ -41,10 +43,10 @@ namespace LemonEmpire.Trading
             if (TimeManager.Instance != null && !TimeManager.Instance.IsShiftActive)
                 return;
 
-            if (targetStand == null || !targetStand.HasStock)
+            if (targetCounter == null)
                 return;
 
-            if (!IsPlayerNearStand())
+            if (!IsPlayerNearCounter())
                 return;
 
             _spawnTimer -= Time.deltaTime;
@@ -59,10 +61,10 @@ namespace LemonEmpire.Trading
             }
         }
 
-        private bool IsPlayerNearStand()
+        private bool IsPlayerNearCounter()
         {
             if (_playerTransform == null) return false;
-            float dist = Vector3.Distance(_playerTransform.position, targetStand.transform.position);
+            float dist = Vector3.Distance(_playerTransform.position, targetCounter.transform.position);
             return dist <= playerProximityRadius;
         }
 
@@ -72,6 +74,14 @@ namespace LemonEmpire.Trading
             if (npcPrefab != null)
             {
                 go = Instantiate(npcPrefab);
+                if (customerSkins != null && customerSkins.Length > 0)
+                {
+                    var smr = go.GetComponentInChildren<SkinnedMeshRenderer>();
+                    if (smr != null)
+                    {
+                        smr.sharedMaterial = customerSkins[Random.Range(0, customerSkins.Length)];
+                    }
+                }
             }
             else
             {
@@ -105,7 +115,7 @@ namespace LemonEmpire.Trading
 
             var buyer = go.GetComponent<NPCBuyer>();
             if (buyer == null) buyer = go.AddComponent<NPCBuyer>();
-            buyer.Initialize(targetStand, exitPoint != null ? exitPoint : transform, _playerTransform);
+            buyer.Initialize(targetCounter, exitPoint != null ? exitPoint : transform, _playerTransform);
         }
     }
 }

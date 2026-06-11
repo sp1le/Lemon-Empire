@@ -1,18 +1,19 @@
 using System.Collections.Generic;
 using UnityEngine;
 using LemonEmpire.Core;
+using LemonEmpire.Player;
 
 namespace LemonEmpire.Trading
 {
 
-    public class TradeStand : MonoBehaviour, IInteractable
+    public class TradeStand : MonoBehaviour, IInteractable, ISecondaryInteractable
     {
         [Header("Stand Settings")]
         [SerializeField] private int maxSlots = 6;
-        [SerializeField] private int pricePerBottle = 100;
-        [SerializeField] private int priceStep = 10;
-        [SerializeField] private int minPrice = 10;
-        [SerializeField] private int maxPrice = 500;
+        [SerializeField] private float pricePerBottle = 1.00f;
+        [SerializeField] private float priceStep = 0.10f;
+        [SerializeField] private float minPrice = 0.10f;
+        [SerializeField] private float maxPrice = 5.00f;
 
         [Header("Display")]
         [SerializeField] private Transform displayArea;
@@ -23,7 +24,7 @@ namespace LemonEmpire.Trading
         private List<float> _dummyYOffsets = new();
 
         public int StockedCount => _stockQualities.Count;
-        public int Price => pricePerBottle;
+        public float Price => pricePerBottle;
         public bool HasStock => _stockQualities.Count > 0;
         public float AverageQuality
         {
@@ -42,8 +43,112 @@ namespace LemonEmpire.Trading
         {
             get
             {
-                return $"[E] Стенд (${pricePerBottle}) | Товар: {_stockQualities.Count}/{maxSlots}\n[Q/R] Цена";
+                var carry = GetLocalPlayerCarry();
+                if (carry != null && carry.IsCarrying)
+                {
+                    var item = carry.CarriedItem;
+                    if (item.ItemType == ItemType.BottledLemonade)
+                    {
+                        if (item.IsCrate)
+                        {
+                            if (item.Amount > 0 && _stockQualities.Count < maxSlots)
+                            {
+                                return $"[E] Выложить {item.DrinkName} на стенд ({item.Amount} шт в коробке)";
+                            }
+                        }
+                        else
+                        {
+                            if (_stockQualities.Count < maxSlots)
+                            {
+                                return $"[E] Поставить {item.DrinkName} на стенд";
+                            }
+                        }
+                    }
+                    return "";
+                }
+                else
+                {
+                    if (_stockQualities.Count > 0)
+                    {
+                        return $"[E] Взять лимонад (${pricePerBottle:F2}) | Товар: {_stockQualities.Count}/{maxSlots}";
+                    }
+                    else
+                    {
+                        return $"Стенд (${pricePerBottle:F2}) (Пусто)";
+                    }
+                }
             }
+        }
+
+        public string SecondaryInteractionPrompt
+        {
+            get
+            {
+                var carry = GetLocalPlayerCarry();
+                if (carry != null && carry.IsCarrying)
+                {
+                    var item = carry.CarriedItem;
+                    if (item != null && item.ItemType == ItemType.BottledLemonade && item.IsCrate)
+                    {
+                        if (item.Amount < 6 && _stockQualities.Count > 0)
+                        {
+                            return $"[F] Забрать {item.DrinkName} в коробку";
+                        }
+                    }
+                    return "";
+                }
+                else
+                {
+                    return $"[F] Установить цену (Текущая: ${pricePerBottle:F2})";
+                }
+            }
+        }
+
+        public bool CanSecondaryInteract => true;
+
+        public void SecondaryInteract(PlayerInteractionContext context)
+        {
+            if (context.PlayerCarry == null) return;
+
+            if (context.PlayerCarry.IsCarrying)
+            {
+                var item = context.PlayerCarry.CarriedItem;
+                if (item != null && item.ItemType == ItemType.BottledLemonade && item.IsCrate)
+                {
+                    if (item.Amount < 6 && _stockQualities.Count > 0)
+                    {
+                        int spaceInCrate = 6 - item.Amount;
+                        int toTake = Mathf.Min(spaceInCrate, _stockQualities.Count);
+                        
+                        float lastQuality = _stockQualities[_stockQualities.Count - 1];
+                        
+                        item.Amount += toTake;
+                        for (int i = 0; i < toTake; i++)
+                        {
+                            _stockQualities.RemoveAt(_stockQualities.Count - 1);
+                        }
+                        
+                        item.SetupDrink(item.DrinkName, item.Sugar, item.Carbonation, item.Alcohol, item.Packaging, item.Amount);
+                        item.Quality = lastQuality;
+                        
+                        UpdateDisplay();
+                    }
+                }
+            }
+            else
+            {
+                if (LemonEmpire.UI.GameHUD.Instance != null)
+                {
+                    LemonEmpire.UI.GameHUD.Instance.ShowPriceInputPanel("Стенд", pricePerBottle, (newPrice) => {
+                        SetPrice(newPrice);
+                    });
+                }
+            }
+        }
+
+        private PlayerCarry GetLocalPlayerCarry()
+        {
+            return FindFirstObjectByType<PlayerCarry>();
         }
 
         public void Interact(PlayerInteractionContext context)
@@ -55,32 +160,61 @@ namespace LemonEmpire.Trading
                 var item = context.PlayerCarry.CarriedItem;
                 if (item.ItemType == ItemType.BottledLemonade)
                 {
-                    int space = maxSlots - _stockQualities.Count;
-                    if (space > 0)
+                    if (item.IsCrate)
                     {
-                        int toTake = Mathf.Min(space, item.Amount);
-                        item.Amount -= toTake;
-
-                        for (int i = 0; i < toTake; i++)
+                        if (item.Amount > 0 && _stockQualities.Count < maxSlots)
                         {
-                            _stockQualities.Add(item.Quality);
-                        }
+                            int space = maxSlots - _stockQualities.Count;
+                            int toTake = Mathf.Min(space, item.Amount);
+                            item.Amount -= toTake;
 
-                        if (item.Amount <= 0)
-                        {
-                            context.PlayerCarry.TakeItem().Consume();
+                            for (int i = 0; i < toTake; i++)
+                            {
+                                _stockQualities.Add(item.Quality);
+                            }
+                            UpdateDisplay();
                         }
-
-                        UpdateDisplay();
                     }
                     else
                     {
-                        Debug.Log("TradeStand: Стенд заполнен!");
+                        if (_stockQualities.Count < maxSlots)
+                        {
+                            _stockQualities.Add(item.Quality);
+                            context.PlayerCarry.TakeItem().Consume();
+                            UpdateDisplay();
+                        }
                     }
                 }
-                else
+            }
+            else
+            {
+                if (_stockQualities.Count > 0)
                 {
-                    Debug.Log("TradeStand: Сюда можно ставить только лимонад!");
+                    var bottlePrefabToUse = bottlePrefab;
+                    GameObject bottleGo = null;
+                    if (bottlePrefabToUse != null)
+                    {
+                        bottleGo = Instantiate(bottlePrefabToUse);
+                        bottleGo.name = bottlePrefabToUse.name;
+                    }
+                    else
+                    {
+                        bottleGo = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+                        bottleGo.name = "LemonadeBottle";
+                    }
+
+                    var bottleItem = bottleGo.GetComponent<ItemBase>();
+                    if (bottleItem == null) bottleItem = bottleGo.AddComponent<ItemBase>();
+
+                    float qualityToUse = _stockQualities[_stockQualities.Count - 1];
+                    _stockQualities.RemoveAt(_stockQualities.Count - 1);
+
+                    bottleItem.SetupDrink("Лимонад", 50f, 50f, 0f, PackagingType.Plastic, 1);
+                    bottleItem.Quality = qualityToUse;
+                    bottleItem.RetailPrice = pricePerBottle;
+
+                    context.PlayerCarry.TryPickup(bottleItem);
+                    UpdateDisplay();
                 }
             }
         }
@@ -160,7 +294,7 @@ namespace LemonEmpire.Trading
             return SellMultiple(1, pricePerBottle);
         }
 
-        public bool SellMultiple(int count, int revenue)
+        public bool SellMultiple(int count, float revenue)
         {
             if (_stockQualities.Count < count) return false;
 
@@ -169,14 +303,19 @@ namespace LemonEmpire.Trading
                 _stockQualities.RemoveAt(0);
             }
 
-            if (EconomyManager.Instance != null && revenue > 0)
+            if (EconomyManager.Instance != null && revenue > 0f)
                 EconomyManager.Instance.Earn(revenue);
 
             UpdateDisplay();
             return true;
         }
 
-        public void AdjustPrice(int direction)
+        public void SetPrice(float newPrice)
+        {
+            pricePerBottle = newPrice;
+        }
+
+        public void AdjustPrice(float direction)
         {
             pricePerBottle += direction * priceStep;
             pricePerBottle = Mathf.Clamp(pricePerBottle, minPrice, maxPrice);

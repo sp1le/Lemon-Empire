@@ -26,7 +26,7 @@ namespace LemonEmpire.UI
             UpdateDisplay();
         }
 
-        public void UpdateAffordability(int balance)
+        public void UpdateAffordability(float balance)
         {
 
             var orderBtn = transform.Find("OrderBtn");
@@ -65,7 +65,7 @@ namespace LemonEmpire.UI
             if (_qtyText != null)
                 _qtyText.text = _quantity.ToString();
 
-            int balance = EconomyManager.Instance != null ? EconomyManager.Instance.Balance : 0;
+            float balance = EconomyManager.Instance != null ? EconomyManager.Instance.Balance : 0f;
             UpdateAffordability(balance);
         }
     }

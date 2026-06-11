@@ -8,11 +8,15 @@ namespace LemonEmpire.Player
     {
         [Header("Carry Settings")]
         [SerializeField] private Transform holdPoint;
-        [SerializeField] private float holdDistance = 0.6f;
-        [SerializeField] private float holdDown = 0.4f;
+        [SerializeField] private float holdDistance = 0.5f; // Ближе к телу для IK
+        [SerializeField] private float holdDown = 0.6f; // Ниже для естественного хвата
         [SerializeField] private float dropDistance = 1.5f;
         [SerializeField] private float dropHeight = 0.5f;
         [SerializeField] private float carryScale = 0.6f;
+
+        [Header("Throw Settings")]
+        [SerializeField] private float throwForce = 8f;
+        [SerializeField] private float throwUpwardForce = 3f;
 
         [Header("Camera Follow")]
         [SerializeField] private float followSmooth = 8f;
@@ -64,7 +68,7 @@ namespace LemonEmpire.Player
                 return false;
 
             _carriedItem = item;
-            _originalScale = _carriedItem.transform.localScale;
+            _originalScale = _carriedItem.OriginalScale;
             _carriedItem.OnPickedUp(holdPoint);
             _carriedItem.transform.localScale = _originalScale * carryScale;
 
@@ -78,6 +82,50 @@ namespace LemonEmpire.Player
 
             _carriedItem.transform.localScale = _originalScale;
             _carriedItem.OnDropped(transform.position + transform.forward * dropDistance + Vector3.up * dropHeight);
+            _carriedItem = null;
+        }
+
+        public void ThrowItem()
+        {
+            if (_carriedItem == null) return;
+
+            Camera cam = Camera.main;
+            if (cam == null)
+            {
+                DropItem();
+                return;
+            }
+
+            // Restore original scale
+            _carriedItem.transform.localScale = _originalScale;
+
+            // Calculate throw position (slightly in front of camera)
+            Vector3 throwPosition = cam.transform.position + cam.transform.forward * 1.2f;
+
+            // Drop the item at throw position
+            _carriedItem.OnDropped(throwPosition);
+
+            // Apply throw force
+            var rb = _carriedItem.GetComponent<Rigidbody>();
+            if (rb != null)
+            {
+                // Calculate throw direction (camera forward + upward)
+                Vector3 throwDirection = cam.transform.forward + Vector3.up * (throwUpwardForce / throwForce);
+                throwDirection.Normalize();
+
+                // Apply force
+                rb.linearVelocity = Vector3.zero; // Reset velocity first
+                rb.AddForce(throwDirection * throwForce, ForceMode.VelocityChange);
+
+                // Add slight random spin for realism
+                Vector3 randomTorque = new Vector3(
+                    Random.Range(-2f, 2f),
+                    Random.Range(-2f, 2f),
+                    Random.Range(-2f, 2f)
+                );
+                rb.AddTorque(randomTorque, ForceMode.VelocityChange);
+            }
+
             _carriedItem = null;
         }
 

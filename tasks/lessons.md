@@ -1,0 +1,186 @@
+# AI Lessons & Guidelines
+
+## 1. Dynamic UI Toolkit (UIDocument) State Preservation
+* **Mistake**: Toggling a dynamic `UIDocument`'s visibility by activating/deactivating its GameObject (`gameObject.SetActive(false)`).
+* **Consequence**: Unity's `UIDocument` clears and completely destroys all dynamically generated `VisualElement` hierarchies from its `rootVisualElement` during `OnDisable()`, leading to a completely blank screen (0 children) when the GameObject is reactivated.
+* **Rule**: Never deactivate the GameObject of a dynamically constructed `UIDocument` to hide it. Instead, toggle the root visual element's display style:
+  ```csharp
+  // To Hide
+  _root.style.display = DisplayStyle.None;
+  // To Show
+  _root.style.display = DisplayStyle.Flex;
+  ```
+  This keeps the component enabled, preserving the layout and child elements in memory.
+
+## 2. PanelSettings Theme Style Sheet (TSS) at Runtime
+* **Mistake**: Programmatically instantiating `PanelSettings` at runtime via `ScriptableObject.CreateInstance<PanelSettings>()`.
+* **Consequence**: The instantiated settings lack a Theme Style Sheet (TSS), producing the console warning: `"No Theme Style Sheet set to PanelSettings, UI will not render properly"`, which prevents standard UI Toolkit components from rendering.
+* **Rule**: Always pre-create a `PanelSettings` asset in the Editor under a `Resources` directory (e.g., `Assets/Resources/TabletPanelSettings.asset`) using **Create > UI Toolkit > Panel Settings**. This automatically links the default `UnityDefaultRuntimeTheme` style sheet, which can then be safely loaded at runtime:
+  ```csharp
+  var settings = Resources.Load<PanelSettings>("TabletPanelSettings");
+  ```
+
+## 3. UI Toolkit Child Clipping & Rounded Corners
+* **Mistake**: Relying on parent element `Overflow.Hidden` with `borderRadius` to clip child elements touching the edges.
+* **Consequence**: UI Toolkit often fails to clip child elements (like status bars or sidebars) to rounded parent corners, resulting in straight, sharp edges at the corners.
+* **Rule**: Apply individual corner radius styles directly to the edge-touching child elements:
+  - Top status bar: `topBar.style.borderTopLeftRadius = radius;` and `topBar.style.borderTopRightRadius = radius;`
+  - Left sidebar: `sidebar.style.borderBottomLeftRadius = radius;`
+  - Right content panel: `_contentArea.style.borderBottomRightRadius = radius;`
+
+## 4. Coexistence with Legacy uGUI Canvases
+* **Mistake**: Leaving old uGUI canvas components active when migrating to UI Toolkit.
+* **Consequence**: The old uGUI interface continues rendering on top, blocking interaction and creating confusion with double elements.
+* **Rule**: Always find and deactivate the old uGUI hierarchy in `Start()` when initializing the new UI Toolkit system:
+  ```csharp
+  var tabletCanvas = transform.Find("TabletCanvas");
+  if (tabletCanvas != null)
+  {
+      tabletCanvas.gameObject.SetActive(false);
+  }
+  ```
+
+## 5. UI Toolkit Text Wrapping and Button Layout Overflow
+* **Mistake**: Adding a Label with `whiteSpace = WhiteSpace.Normal` inside a horizontal parent `VisualElement` (`flexDirection = Row`) without constraining the parent's width.
+* **Consequence**: The parent element expands to fit the single-line preferred size of the long text, causing the button borders and text to overflow their grandparent container's boundaries.
+* **Rule**: Always constrain the parent button container's width explicitly (`width = Length.Percent(100)`) and ensure standard flex-shrink/grow properties on the Label child to force correct multi-line wrapping within bounds.
+
+## 6. Animator Reversal and Playback Freezes
+* **Mistake**: Setting `animator.speed = -1.0f` dynamically to play standard animation clips backwards starting from a normalized time of 0.
+* **Consequence**: The Animator tries to evaluate the animation state backwards past time 0, causing it to hit a timeline wall and freeze completely.
+* **Rule**: Keep `animator.speed = 1.0f` for normal forward playback and keep the character model aligned forward relative to the camera look view direction (e.g., `localRotation = Quaternion.identity` at all times), which is the standard, stable first-person shadow implementation in Unity when backward animation clips are missing.
+
+## 7. Reflection-based Debug/Mock Simulation
+* **Mistake**: Relying on standard gameplay state modification methods (like `Earn(int amount)`) inside debug tools that reject negative values or enforce bounds.
+* **Consequence**: The debug console fails to force specific simulation conditions (like setting the player's balance to $10 to trigger Financial Depression).
+* **Rule**: When writing simulation or debug pedestal controllers, use C# Reflection (`typeof(T).GetField`) to directly overwrite private fields and manually invoke multicast delegate events (like `OnBalanceChanged`) to guarantee reliable, instant mocking.
+
+## 8. Play Mode & Compilation Verification Protocols
+* **Mistake**: Marking a task as complete solely based on code edits without executing compiler validation, checking console logs, or running active tests.
+* **Consequence**: Subtle syntax errors or runtime bugs survive, leading to project instability.
+* **Rule**: Always perform a complete compilation pass (`refresh_unity`), inspect editor console logs for errors/warnings, and check active test runs (via `run_tests`) to guarantee 100% stable, verified gameplay before delivering.
+
+## 9. Domain-Specific Condition Thresholds
+* **Mistake**: Implementing generic triggers (e.g., drinking any lemonade) for specific gameplay states when the GDD defines strict mechanical boundaries (e.g., only drinks with Sugar > 75%).
+* **Consequence**: Mechanical imbalance, breaking intended game economics, and failing to respect GDD design requirements.
+* **Rule**: Always enforce explicit GDD parameters (such as `drink.Sugar > 75f` or `balance < 50`) using robust C# conditions before transitioning status effects or player states.
+
+## 10. Item-Specific Carrying Handlers and Context Prompts
+* **Mistake**: Displaying a generic drink consumption prompt or input trigger when the player is carrying any item.
+* **Consequence**: The player might attempt to drink non-consumable items (like boxes or equipment) or see confusing prompts, and the prompt might not show up if the player is looking at another target.
+* **Rule**: Always verify the specific item type (`ItemType.BottledLemonade`) before enabling consumption inputs or prompts. Combine context-specific prompts elegantly when holding a consumable while looking at other interactables (e.g., counters or tables) so the player is always fully aware of their options.
+
+## 11. Языковые стандарты для документации и планов (Language Standards)
+* **Ошибка**: Составление планов реализации (Implementation Plans), списков задач (Tasks) и отчетов (Walkthroughs/Guides) на английском языке, когда рабочий язык пользователя — русский.
+* **Последствие**: Неудобство для пользователя, нарушение консистентности проекта и несоответствие прямым требованиям.
+* **Правило**: Абсолютно всегда писать любые планы реализации (`implementation_plan.md`), файлы задач (`task.md`), инструкции, руководства (`walkthrough.md`, `lowpoly_assets_mapping.md`) и любые другие артефакты документации строго на русском языке.
+
+## 12. Подбор 3D-моделей для коммерческого окружения (Торговая мебель)
+* **Ошибка**: Использование стандартных комодов и прикроватных тумбочек с выдвижными ящиками (`cabinet_small`, `cabinet_medium`) в качестве торговых прилавков или кассовых столов, а также дублирование визуальной геометрии на перекрывающихся логических зонах (например, `TradeStand` и `CounterModel`).
+* **Последствие**: Интерьер магазина выглядит нереалистично (как жилая спальня/офис), а пересекающиеся меши приводят к сильному Z-fighting'у и визуальной неопрятности.
+* **Правило**: 
+  - Для касс и прилавков использовать специализированные длинные торговые столы (например, `table_medium_long`).
+  - Если кассовая стойка объединяет логическую зону торговли (`TradeStand`) и кассу (`CounterModel`), визуальную модель следует создавать только на одном из родительских объектов, оставляя второй в качестве невидимого триггера взаимодействия во избежание пересечения мешей.
+  - Для мусорных баков использовать тематические круглые объекты (например, деревянные бочки `barrel.fbx` с корректной текстурой и вертикальным поворотом).
+  - Масштаб столов и стульев должен быть сопоставим: если стол увеличивается до `1.0` (ширина 2.0м), стулья должны быть масштабированы соответственно (до `0.85`), чтобы игрок и NPC не выглядели великанами.
+
+## 13. Процедурная стилизация и освещение уютных интерьеров (Лофт-паб)
+* **Ошибка**: Использование стандартного белого Directional Light с высокой интенсивностью и стандартного серого эмбиента при создании уютных полумрачных помещений (таких как паб, таверна или кофейня).
+* **Последствие**: Окружение выглядит слишком плоским, переэкспонированным и не передает атмосферу уюта.
+* **Правило**: 
+  - Направленные источники света (Directional Light) в помещениях следует делать теплого янтарного или золотистого оттенка (например, `#FFDFC0`) с умеренной интенсивностью (`1.5` - `1.6`), чтобы симулировать лампы накаливания.
+  - Настройку `RenderSettings.ambientLight` следует переключать в плоский режим (Flat) и делать теплой темно-коричневой/серой, чтобы тени и неосвещенные углы были мягкими и глубокими.
+  - Детали интерьера (например, пивные краны, металлические ручки) делать блестящими с высоким значением Metallic (1.0) и Smoothness (0.9), чтобы они создавали красивые блики при теплом свете. Стены же делать темно-серыми (charcoal, `#222226`) и матовыми (Smoothness = 0.2).
+
+## 14. Использование текстур-атласов на примитивах Unity без UV-развертки
+* **Ошибка**: Назначение текстурных материалов (например, `FurnitureMaterial` с палитровым атласом) на стандартные примитивы Unity (`Cube`, `Cylinder` и т.д.).
+* **Последствие**: Поскольку у стандартных примитивов нет правильной UV-развертки под конкретный атлас, текстура ложится некорректно, создавая разноцветный пиксельный шум, что выглядит крайне непрофессионально и портит визуальный стиль.
+* **Правило**: При использовании стандартных примитивов для быстрого создания мебели (полки, стойки, колонки) назначать только сплошные цветные материалы без текстурных атласов (например, `WoodSolidMaterial.mat` сплошного дерева, `MarbleMaterial.mat` мрамора с соответствующим цветом и настройками Roughness/Metallic) либо использовать импортированные 3D-модели с корректной UV-разверткой.
+
+## 15. Пропорции и масштаб персонажей (Player и NPC)
+* **Ошибка**: Использование импортированных low-poly персонажей с масштабом (local scale) по умолчанию `(1.0, 1.0, 1.0)`, что привело к росту моделей более 5.9 метров (гиганты относительно столов, стульев и стен).
+* **Последствие**: Персонажи выглядят комично, задевают головой потолок, ломается масштаб окружения и страдает эстетика.
+* **Правило**: Всегда проверять физические размеры меша через Bounds (`skinnedMeshRenderer.bounds.size`) и масштабировать персонажей под реальные пропорции человека (рост ~1.8м) относительно высоты барных стоек (~0.85м) и потолков (~3.5м). Для модели `Animated Human.fbx` от Quaternius правильный масштаб составляет `~0.3` (если родитель равен 1.0) или уменьшение масштаба костей каркаса до `20.96`.
+
+## 16. Дизайн инвентаря уборки и стоек (Швабры и Стойки-вешалки)
+* **Ошибка**: Создание щетки швабры в виде разреженных палочек/кубиков, что делает её похожей на садовые грабли ("грабли для сена"), и оставление дубликатов старых объектов в сцене, из-за чего меши накладывались друг на друга. Также оставление швабры стоять на полу вместо подвешивания на крючки стойки.
+* **Последствие**: Пользователь видит "грабли" вместо швабры, а Z-fighting перекрывающихся мешей портит визуал.
+* **Правило**:
+  - Для современных швабр использовать дизайн плоского флаундера (прямоугольная пластиковая рамка + плоская насадка из микрофибры снизу чуть большего размера + хромированный поворотный шарнир-хиндж).
+  - Стойку-вешалку делать достаточно высокой (~1.6м), чтобы швабра висела на крючке за кольцо на конце ручки в воздухе, не проваливаясь сквозь пол.
+  - При замене моделей в сцене всегда проверять и удалять любые старые дублирующиеся GameObjects во избежание наложения.
+
+## 17. Детализация стендов инвентаря и адаптивный масштаб персонажей
+* **Ошибка**:
+  - Использование простой горизонтальной перекладины с pegs для вешалки швабр, что делает стенд похожим на грабли, и оставление швабры стоять на полу.
+  - Масштабирование персонажей до стандартного роста в 1.80 м, из-за чего они выглядят огромными гигантами на фоне лоу-поли барной стойки (высотой 0.86 м) и стульев (высотой 0.43 м), которые замоделированы по пропорциям обеденных столов.
+* **Последствие**: Некрасивый внешний вид стенда, ломающий погружение, и неестественные пропорции персонажей в интерьере.
+* **Правило**:
+  - Чтобы стенд для инвентаря не выглядел как грабли, использовать дизайн в виде настенного или отдельно стоящего щита-панели (Backboard) из темного пластика/дерева с хромированным ободком, а крючки (цилиндры) наклонять вверх (на 75 градусов).
+  - Подвешивать швабру вертикально, делая её дочерним объектом стенда в сцене, устанавливая её мировую ротацию в `Quaternion.identity` и выключая физику (`isKinematic = true`), чтобы она висела ровно и не перенимала наклон крючков. Написать скрипт `BroomToolRack`, позволяющий вешать швабру обратно на вешалку через интерактивное меню.
+  - Если мебель в игре стилизована под меньший масштаб (например, барная стойка высотой всего 0.86 м), отмасштабировать персонажей (Игрока и NPC) до высоты ~1.3 м (lossyScale 15.0) и пропорционально опустить камеру игрока (`eyeHeight` и `cameraTargetHeight` = 1.2 м). Это сбалансирует пропорции кадра.
+
+## 18. Взаимодействие со скриптами сборки редактора и разметкой дорог при процедурной генерации
+* **Ошибка**:
+  - Попытка вызывать методы из классов сборки редактора (`Assembly-CSharp-Editor`) напрямую из среды выполнения C# скриптов (`execute_code`), что вызывает ошибки компилятора о недоступности типа.
+  - Оставление включенными MeshCollider на плоских Quad объектах дорожной разметки.
+* **Последствие**: Невозможность запустить генерацию среды из скриптов и застревание персонажа или лучей интеракции на невидимых коллайдерах разметки дорог.
+* **Правило**:
+  - При процедурной генерации геометрии дорожной разметки на основе `Quad` всегда явно удалять `MeshCollider` (`DestroyImmediate(col)`), чтобы разметка была чисто визуальной и не мешала геймплею.
+  - Если необходимо запустить редакторские методы через инструмент `execute_code`, следует выполнять тело метода целиком в блоке кода инструмента, так как компиляция инструмента идет в обход ссылок на редакторскую сборку.
+
+## 19. Проверка и устранение ошибок приведения типов (float/int) при рефакторинге экономики
+* **Ошибка**: При изменении базовых типов экономических показателей (например, перевод баланса и расходов с `int` на `float`) были пропущены некоторые вызовы в скриптах интерфейса планшета (`TabletUI.cs`, `TabletShopEntry.cs`), что привело к ошибкам компиляции `CS0266`. Дополнительно, компилятор не мог обновить ошибки из-за зависшего процесса тестирования редактора.
+* **Последствие**: Проект Unity перестает компилироваться, сборка ломается, и игра не может быть запущена.
+* **Правило**:
+  - При изменении типа данных глобального менеджера (например, `EconomyManager`) обязательно проверять все вхождения этих полей (через `grep_search`) во всем проекте и приводить типы или использовать явное форматирование (например, `:F2` для дробных чисел).
+  - Если Unity зависает в состоянии компиляции или выполнения тестов (`tests_running`), с помощью ресурса `mcpforunity://editor/state` определить блокирующую причину, завершить мешающие процессы (например, остановить Play Mode с помощью `manage_editor` с действием `stop`), вызвать `refresh_unity` для принудительного обновления базы ассетов и верифицировать отсутствие ошибок с помощью `read_console` (тип `error`).
+
+## 20. Дистанция взаимодействия и отсечение удерживаемых предметов при рейкасте из камеры
+* **Ошибка**: Измерение дистанции взаимодействия при рейкасте из камеры как расстояния от ног игрока (`transform.position`) до точки попадания луча (`hit.point`), а также отсутствие игнорирования переносимого в руках предмета (`PlayerCarry.CarriedItem`).
+* **Последствие**:
+  - Так как камера находится на уровне глаз (~1.4м), разница высот прибавляет существенную погрешность к дистанции. Игрок не может дотянуться до объектов (дверей, полок) на комфортном расстоянии (2.5м по горизонтали превращаются в 2.86м по формуле расстояния, а при взгляде вверх или вниз дистанция превышает лимит в 3м, из-за чего взаимодействие перестает работать тихо, без ошибок в консоли).
+  - Удерживаемый в руках предмет (например, коробка) имеет свои коллайдеры и блокирует луч из камеры, перехватывая фокус взаимодействия на себя и не давая навестись ни на двери, ни на столы.
+* **Правило**:
+  - При рейкасте или сфиркасте из камеры всегда измерять дистанцию взаимодействия напрямую от позиции камеры (`hit.distance` для обычных попаданий и расстояние от камеры до ближайшей точки коллайдера для перекрытий с `distance == 0`).
+  - В цикле обработки попаданий обязательно проверять и игнорировать коллайдеры переносимого предмета (`carry.CarriedItem`), чтобы он не перехватывал фокус и не блокировал взаимодействие с окружением.
+
+## 21. Настройка поля cameraTarget в PlayerController и сброс позиции камеры
+* **Ошибка**: Назначение объекта **`Main Camera`** напрямую в поле инспектора `cameraTarget` на компоненте `PlayerController` игрока.
+* **Последствие**:
+  - `PlayerController.Update()` в каждом кадре устанавливает `cameraTarget.localPosition = new Vector3(0f, cameraTargetHeight, 0f)`.
+  - Поскольку `Main Camera` является корневым объектом сцены и не имеет родителя, изменение `localPosition` эквивалентно изменению мирового `position`. В результате каждый кадр в фазе `Update` камера принудительно телепортируется в координаты `(0.00, 1.40, 0.00)`.
+  - Система взаимодействия (`PlayerInteraction`), работающая в `Update()`, пускает рейкаст из позиции камеры `(0.00, 1.40, 0.00)` вперед, из-за чего наведение на интерактивные объекты ломается. При этом в фазе `LateUpdate()` скрипт `ThirdPersonCamera` перемещает камеру обратно к игроку, маскируя баг в Scene View и при чтении позиции в конце кадра.
+* **Правило**:
+  - Никогда не назначайте саму `Main Camera` в качестве `cameraTarget` на `PlayerController`. Поле `cameraTarget` должно оставаться пустым (`null`) в инспекторе — в этом случае `EnsureCameraTarget()` при старте автоматически создаст правильный локальный дочерний объект `CameraTarget` под игроком, а `ThirdPersonCamera` будет корректно синхронизировать позицию основной камеры с ним в фазе `LateUpdate()`.
+
+## 22. Совпадение визуальных моделей и физических коллайдеров сложных объектов
+* **Ошибка**: Смещение или поворот визуального дочернего объекта (например, `DumpsterVisual`) относительно родительского объекта с физическим коллайдером (`TrashBin` с `BoxCollider`), произошедшие в сцене или при процедурном спавне.
+* **Последствие**: Физические границы объекта находятся в одном месте, а визуальное отображение — в другом. Игрок может проходить сквозь визуальный объект и сталкиваться с невидимой преградой в пустом пространстве, что сильно портит игровой опыт.
+* **Правило**: При процедурном размещении или корректировке объектов в сцене всегда сбрасывайте локальные координаты (`localPosition = Vector3.zero`) и углы поворота (`localRotation = Quaternion.identity`) визуальных дочерних элементов относительно их физических контейнеров (или настраивайте параметры коллайдера так, чтобы они полностью соответствовали смещению визуала), чтобы гарантировать полное соответствие физики и графики.
+
+## 23. URP Shader LightMode Tag для дополнительных материал-слотов
+* **Ошибка**: Использование `Tags { "LightMode"="UniversalForward" }` в кастомном шейдере, который добавляется как дополнительный материал-слот (`sharedMaterials` array) к объекту.
+* **Последствие**: URP рендерит только один pass с `LightMode=UniversalForward` для каждого submesh. Когда outline-материал использует тот же LightMode, он либо заменяет основной forward pass объекта, либо не рендерится вообще — outline не виден.
+* **Правило**: Для шейдеров, которые добавляются как дополнительные material-слоты (outline, overlay и т.д.), всегда используйте `Tags { "LightMode"="SRPDefaultUnlit" }`. Этот тег гарантирует, что pass рендерится независимо от основного URP forward pass объекта.
+
+## 24. Утечка материалов при работе с Renderer.materials
+* **Ошибка**: Использование `renderer.materials` (property getter) для сохранения оригинальных материалов, а затем `renderer.materials = newMats` для восстановления.
+* **Последствие**: Getter `renderer.materials` создаёт **копии** всех материалов при каждом вызове. При частом переключении highlight/unhighlight (каждый кадр при смене целей) эти копии накапливаются и не уничтожаются, вызывая утечку памяти.
+* **Правило**: Использовать `renderer.sharedMaterials` для чтения и записи массива материалов. `sharedMaterials` не создаёт копий, а работает напрямую с ассетами. Применять `renderer.materials` только когда нужно намеренно создать уникальные инстансы материалов для конкретного рендерера.
+
+## 25. Сохранение и адаптация функционала GDD при рефакторинге (BrewCraft / Заказ напитков)
+* **Ошибка**: Полное удаление вкладки BrewCraft при переходе планшета на UI Toolkit и добавлении вкладки «Склад», из-за ошибочного предположения, что конструктор напитков больше не требуется.
+* **Последствие**: Игроки потеряли ключевой функционал заказа кастомных партий продуктов для паба, явно описанный в дизайн-документе (GDD).
+* **Правило**: Перед удалением любого меню или системы при очистке кодовой базы всегда сверяться с GDD и требованиями проекта. Если меню (например, конструктор партий BrewCraft) является частью игрового цикла заказа товаров, его необходимо не удалять, а адаптировать под новый стек (UI Toolkit), сохраняя формулы расчета себестоимости и спавна коробок в зоне доставки.
+
+## 26. Ограничение на добавление нескольких графических компонентов в uGUI (Image и Text)
+* **Ошибка**: Попытка добавить компонент `Text` непосредственно на GameObject, на котором уже присутствует компонент `Image` (для фоновой плашки/кнопки).
+* **Последствие**: Unity возвращает `null` при вызове `AddComponent<Text>()`, так как оба компонента наследуются от `MaskableGraphic` и конфликтуют на одном объекте. Дальнейшее обращение к текстовому полю вызывает `NullReferenceException` и прерывает выполнение скрипта.
+* **Правило**: Всегда создавать отдельный дочерний GameObject для отображения текста поверх плашек с задним фоном (например, кнопок или плашек трендов), настраивая его `RectTransform` (растягивание по родителю).
+
+## 27. Проверка зависимостей перед удалением вспомогательных классов (UIStyleExtensions)
+* **Ошибка**: Удаление вспомогательного класса расширений `UIStyleExtensions.cs` на основании того, что переписываемый класс (`TabletUI.cs`) больше в нём не нуждается.
+* **Последствие**: Другие несвязанные UI-компоненты (такие как `GameHUD.cs`) ломаются и проект перестает компилироваться из-за отсутствия методов расширения `SetBorderRadius` и др.
+* **Правило**: Перед удалением любого файла утилит или расширений выполнять полный поиск по всей кодовой базе (через `grep_search`) на наличие вызовов определяемых в нём методов, чтобы гарантировать отсутствие скрытых зависимостей.
+

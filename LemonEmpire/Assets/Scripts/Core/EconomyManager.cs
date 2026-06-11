@@ -8,15 +8,15 @@ namespace LemonEmpire.Core
         public static EconomyManager Instance { get; private set; }
 
         [Header("Starting Balance")]
-        [SerializeField] private int startingMoney = 500;
+        [SerializeField] private float startingMoney = 500f;
 
-        private int _balance;
+        private float _balance;
 
-        public event System.Action<int> OnBalanceChanged;
+        public event System.Action<float> OnBalanceChanged;
 
-        public int Balance => _balance;
-        public int DailyRevenue { get; private set; }
-        public int DailyExpenses { get; private set; }
+        public float Balance => _balance;
+        public float DailyRevenue { get; private set; }
+        public float DailyExpenses { get; private set; }
         public int BottlesSold { get; private set; }
 
         private void Awake()
@@ -27,7 +27,7 @@ namespace LemonEmpire.Core
                 return;
             }
             Instance = this;
-            _balance = startingMoney;
+            _balance = Mathf.Max(startingMoney, 500f); // Enforce starting balance of at least $500 to prevent premature depression
         }
 
         private void Start()
@@ -35,9 +35,9 @@ namespace LemonEmpire.Core
             OnBalanceChanged?.Invoke(_balance);
         }
 
-        public bool TrySpend(int amount)
+        public bool TrySpend(float amount)
         {
-            if (amount <= 0 || _balance < amount) return false;
+            if (amount <= 0f || _balance < amount) return false;
 
             _balance -= amount;
             DailyExpenses += amount;
@@ -45,9 +45,9 @@ namespace LemonEmpire.Core
             return true;
         }
 
-        public void Earn(int amount)
+        public void Earn(float amount)
         {
-            if (amount <= 0) return;
+            if (amount <= 0f) return;
 
             _balance += amount;
             DailyRevenue += amount;
@@ -57,8 +57,8 @@ namespace LemonEmpire.Core
 
         public void ResetDailyStats()
         {
-            DailyRevenue = 0;
-            DailyExpenses = 0;
+            DailyRevenue = 0f;
+            DailyExpenses = 0f;
             BottlesSold = 0;
         }
     }

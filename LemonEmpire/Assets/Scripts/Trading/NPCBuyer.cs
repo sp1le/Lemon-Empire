@@ -3,6 +3,9 @@ using UnityEngine.AI;
 using LemonEmpire.Core;
 using LemonEmpire.UI;
 using LemonEmpire.Network;
+using System.Collections;
+using System.Collections.Generic;
+using LemonEmpire.Production;
 
 namespace LemonEmpire.Trading
 {
@@ -14,24 +17,48 @@ namespace LemonEmpire.Trading
         Leaving
     }
 
+    public enum NPCArchetype
+    {
+        Kids,
+        Athletes,
+        Hipsters,
+        PartyAnimals
+    }
+
     [RequireComponent(typeof(NavMeshAgent))]
     public class NPCBuyer : MonoBehaviour
     {
         [Header("NPC Settings")]
         [SerializeField] private float evaluateTime = 2f;
-        [SerializeField] private float maxAcceptablePrice = 200f;
         [SerializeField] private float priceToleranceBase = 1.0f;
         [SerializeField] private float playerRequiredDistance = 8f;
 
         private NavMeshAgent _agent;
         private NPCState _state = NPCState.Walking;
-        private TradeStand _targetStand;
+        private ServiceCounter _targetCounter;
         private float _evaluateTimer;
         private Transform _exitPoint;
         private Transform _playerTransform;
 
+        // Seated table variables
+        private CustomerTable _assignedTable;
+        private Transform _assignedChair;
+        private bool _isSitting;
+
         public NPCState State => _state;
-        public TradeStand TargetStand => _targetStand;
+        public ServiceCounter TargetCounter => _targetCounter;
+
+        // Archetype / Beverage specifications
+        public NPCArchetype Archetype { get; private set; }
+        public float MinSugar { get; private set; }
+        public float MaxSugar { get; private set; }
+        public float MinCarbonation { get; private set; }
+        public float MaxCarbonation { get; private set; }
+        public float MinAlcohol { get; private set; }
+        public float MaxAlcohol { get; private set; }
+        public PackagingType? PreferredPackaging { get; private set; }
+        public bool RequiresPackaging { get; private set; }
+        public float MaxTemperature { get; private set; } = 100f;
 
         public NpcResponse CachedDialogResponse { get; set; }
         public float[] ReplyReactionBonuses { get; set; }
@@ -41,32 +68,216 @@ namespace LemonEmpire.Trading
             _agent = GetComponent<NavMeshAgent>();
             _agent.speed = 2.5f;
             _agent.stoppingDistance = 1.5f;
+
+            // Generate archetype based on active trend
+            Archetype = ChooseArchetype();
+            SetupArchetypeStats();
         }
 
-        public void Initialize(TradeStand stand, Transform exitPoint, Transform player)
+        private void SetupArchetypeStats()
         {
-            _targetStand = stand;
+            switch (Archetype)
+            {
+                case NPCArchetype.Kids:
+                    MinSugar = 70f; MaxSugar = 100f;
+                    MinAlcohol = 0f; MaxAlcohol = 0f;
+                    MinCarbonation = 40f; MaxCarbonation = 100f;
+                    PreferredPackaging = PackagingType.Plastic;
+                    RequiresPackaging = false;
+                    break;
+                case NPCArchetype.Athletes:
+                    MinSugar = 0f; MaxSugar = 15f;
+                    MinAlcohol = 0f; MaxAlcohol = 0f;
+                    MinCarbonation = 0f; MaxCarbonation = 30f;
+                    PreferredPackaging = PackagingType.Can;
+                    RequiresPackaging = false;
+                    break;
+                case NPCArchetype.Hipsters:
+                    MinSugar = 20f; MaxSugar = 40f;
+                    MinAlcohol = 0f; MaxAlcohol = 5f;
+                    MinCarbonation = 0f; MaxCarbonation = 100f;
+                    PreferredPackaging = PackagingType.Glass;
+                    RequiresPackaging = true;
+                    break;
+                case NPCArchetype.PartyAnimals:
+                    MinSugar = 0f; MaxSugar = 100f;
+                    MinAlcohol = 12f; MaxAlcohol = 100f;
+                    MinCarbonation = 60f; MaxCarbonation = 100f;
+                    PreferredPackaging = null;
+                    RequiresPackaging = false;
+                    break;
+            }
+
+            MaxTemperature = 100f;
+
+            // Apply Daily Trend overrides
+            switch (GameEventManager.CurrentTrend)
+            {
+                case DailyTrend.HeatWave:
+                    if (MinCarbonation < 50f) MinCarbonation = 50f;
+                    if (MaxCarbonation < 50f) MaxCarbonation = 100f;
+                    MaxTemperature = 10f;
+                    break;
+                case DailyTrend.PartyNight:
+                    if (MinAlcohol < 12f) MinAlcohol = 12f;
+                    if (MaxAlcohol < 12f) MaxAlcohol = 100f;
+                    break;
+                case DailyTrend.KidDay:
+                    if (MinSugar < 70f) MinSugar = 70f;
+                    if (MaxSugar < 70f) MaxSugar = 100f;
+                    MinAlcohol = 0f;
+                    MaxAlcohol = 0f;
+                    break;
+                case DailyTrend.Marathon:
+                    MinSugar = 0f;
+                    MaxSugar = 15f;
+                    MinAlcohol = 0f;
+                    MaxAlcohol = 0f;
+                    break;
+            }
+        }
+
+        private NPCArchetype ChooseArchetype()
+        {
+            float rand = Random.value;
+            switch (GameEventManager.CurrentTrend)
+            {
+                case DailyTrend.HeatWave:
+                    if (rand < 0.30f) return NPCArchetype.Hipsters;
+                    else if (rand < 0.60f) return NPCArchetype.Athletes;
+                    else if (rand < 0.80f) return NPCArchetype.Kids;
+                    else return NPCArchetype.PartyAnimals;
+
+                case DailyTrend.PartyNight:
+                    if (rand < 0.80f) return NPCArchetype.PartyAnimals;
+                    else if (rand < 0.8667f) return NPCArchetype.Kids;
+                    else if (rand < 0.9334f) return NPCArchetype.Athletes;
+                    else return NPCArchetype.Hipsters;
+
+                case DailyTrend.KidDay:
+                    if (rand < 0.80f) return NPCArchetype.Kids;
+                    else if (rand < 0.8667f) return NPCArchetype.Athletes;
+                    else if (rand < 0.9334f) return NPCArchetype.Hipsters;
+                    else return NPCArchetype.PartyAnimals;
+
+                case DailyTrend.Marathon:
+                    if (rand < 0.80f) return NPCArchetype.Athletes;
+                    else if (rand < 0.8667f) return NPCArchetype.Kids;
+                    else if (rand < 0.9334f) return NPCArchetype.Hipsters;
+                    else return NPCArchetype.PartyAnimals;
+
+                case DailyTrend.Normal:
+                default:
+                    return (NPCArchetype)Random.Range(0, 4);
+            }
+        }
+
+        public void Initialize(ServiceCounter counter, Transform exitPoint, Transform player)
+        {
+            _targetCounter = counter;
             _exitPoint = exitPoint;
             _playerTransform = player;
             _state = NPCState.Walking;
 
-            if (_targetStand != null)
-                _agent.SetDestination(_targetStand.transform.position);
+            bool wentToTable = false;
+            if (UpgradeManager.IsLeftHallUnlocked)
+            {
+                if (Random.value < 0.40f)
+                {
+                    CustomerTable[] tables = FindObjectsByType<CustomerTable>(FindObjectsSortMode.None);
+                    List<CustomerTable> emptyTables = new List<CustomerTable>();
+                    foreach (var t in tables)
+                    {
+                        if (t != null && t.IsEmpty)
+                        {
+                            emptyTables.Add(t);
+                        }
+                    }
 
-            float precalcReaction = CalculateReactionScore();
-            if (DialogueUI.Instance != null)
-                DialogueUI.Instance.PrefetchDialogue(this, precalcReaction);
+                    if (emptyTables.Count > 0)
+                    {
+                        CustomerTable chosenTable = emptyTables[Random.Range(0, emptyTables.Count)];
+                        if (chosenTable.AssignNPC(this))
+                        {
+                            wentToTable = true;
+                            if (chosenTable.SeatedCount == 1 && Random.value < 0.50f)
+                            {
+                                SpawnCompanionNPC(chosenTable);
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (!wentToTable)
+            {
+                if (_targetCounter != null)
+                    SetDestinationSafe(_targetCounter.transform.position);
+
+                float precalcReaction = CalculateReactionScore();
+                if (DialogueUI.Instance != null)
+                    DialogueUI.Instance.PrefetchDialogue(this, precalcReaction);
+            }
+        }
+
+        public void InitializeWithTable(CustomerTable table, Transform exitPoint, Transform player)
+        {
+            _exitPoint = exitPoint;
+            _playerTransform = player;
+            _state = NPCState.Walking;
+            table.AssignNPC(this);
+        }
+
+        private void SpawnCompanionNPC(CustomerTable table)
+        {
+            var spawner = FindFirstObjectByType<NPCSpawner>();
+            if (spawner != null)
+            {
+                GameObject companionGo = Instantiate(gameObject, spawner.transform.position, Quaternion.identity);
+                companionGo.name = "NPC_Customer_Companion";
+                var companionBuyer = companionGo.GetComponent<NPCBuyer>();
+                if (companionBuyer != null)
+                {
+                    companionBuyer.InitializeWithTable(table, _exitPoint, _playerTransform);
+                }
+            }
+        }
+
+        public void AssignTable(CustomerTable table, Transform chair)
+        {
+            _assignedTable = table;
+            _assignedChair = chair;
+            _isSitting = false;
+
+            if (_agent == null) _agent = GetComponent<NavMeshAgent>();
+            if (!_agent.enabled) _agent.enabled = true;
+
+            if (chair != null)
+            {
+                SetDestinationSafe(chair.position);
+            }
+            else
+            {
+                SetDestinationSafe(table.transform.position);
+            }
         }
 
         private float CalculateReactionScore()
         {
-            float quality = _targetStand != null ? _targetStand.AverageQuality : 50f;
-            float playerLook = PlayerVitals.Instance != null ? PlayerVitals.Instance.LookScore : 0f;
-            return (quality * 0.5f) + (playerLook * 0.3f) + Random.Range(-20f, 20f);
+            return 50f + Random.Range(-20f, 20f);
         }
 
         private void Update()
         {
+            if (_agent == null || !_agent.enabled || !_agent.isOnNavMesh)
+                return;
+
+            if (_assignedTable != null)
+            {
+                UpdateTableGuest();
+                return;
+            }
+
             switch (_state)
             {
                 case NPCState.Walking:
@@ -85,9 +296,36 @@ namespace LemonEmpire.Trading
             }
         }
 
+        private void UpdateTableGuest()
+        {
+            if (_state == NPCState.Leaving)
+            {
+                UpdateLeaving();
+                return;
+            }
+
+            if (!_isSitting)
+            {
+                if (!_agent.pathPending && _agent.remainingDistance <= _agent.stoppingDistance)
+                {
+                    _isSitting = true;
+                    _agent.enabled = false;
+                    if (_assignedChair != null)
+                    {
+                        transform.position = _assignedChair.position;
+                        transform.rotation = _assignedChair.rotation;
+                    }
+                    else
+                    {
+                        transform.position = _assignedTable.transform.position;
+                    }
+                }
+            }
+        }
+
         private void UpdateWalking()
         {
-            if (_targetStand == null)
+            if (_targetCounter == null)
             {
                 _state = NPCState.Leaving;
                 GoToExit();
@@ -104,7 +342,14 @@ namespace LemonEmpire.Trading
                 }
 
                 _state = NPCState.Evaluating;
-                _evaluateTimer = evaluateTime;
+                float baseWait = evaluateTime > 5f ? evaluateTime : 15f;
+                float cleanliness = 100f;
+                if (LemonEmpire.Core.ShopCleanlinessManager.Instance != null)
+                {
+                    cleanliness = LemonEmpire.Core.ShopCleanlinessManager.Instance.Cleanliness;
+                }
+                float patienceMultiplier = Mathf.Clamp(cleanliness / 100f, 0.1f, 1f);
+                _evaluateTimer = baseWait * patienceMultiplier;
             }
         }
 
@@ -114,55 +359,60 @@ namespace LemonEmpire.Trading
         {
             if (_dialogueStarted) return;
 
-            _evaluateTimer -= Time.deltaTime;
-            if (_evaluateTimer > 0f) return;
-
-            if (_targetStand == null || !_targetStand.HasStock)
+            if (_targetCounter == null)
             {
                 _state = NPCState.Leaving;
                 GoToExit();
                 return;
             }
 
-            float quality = _targetStand.AverageQuality;
-
-            // Optional: Recalculate dynamic values here if you want final price fairness to be exact.
-            // But we will just use it to see if they buy or not. The reaction score was mostly precalculated.
-            
-            float playerLook = PlayerVitals.Instance != null ? PlayerVitals.Instance.LookScore : 0f;
-            float reaction = (quality * 0.5f) + (playerLook * 0.3f) + Random.Range(-20f, 20f);
-
-            var dialogueUI = UI.DialogueUI.Instance;
-            if (dialogueUI != null && !dialogueUI.IsActive)
+            // Check if there is a drink placed on the service counter
+            if (_targetCounter.PlacedDrink != null)
             {
-                _dialogueStarted = true;
-                dialogueUI.StartDialogue(this, reaction, (success) =>
+                // Check cleanliness before starting transaction
+                float cleanliness = 100f;
+                if (LemonEmpire.Core.ShopCleanlinessManager.Instance != null)
                 {
-                    if (success)
+                    cleanliness = LemonEmpire.Core.ShopCleanlinessManager.Instance.Cleanliness;
+                }
+
+                if (Random.value > (cleanliness / 100f))
+                {
+                    Debug.Log($"{gameObject.name} walked out in disgust due to dirty shop ({cleanliness:F1}% cleanliness).");
+                    _state = NPCState.Leaving;
+                    GoToExit();
+                    return;
+                }
+
+                float quality = _targetCounter.PlacedDrink.Quality;
+                float reaction = (quality * 0.5f) + Random.Range(-20f, 20f);
+
+                var dialogueUI = UI.DialogueUI.Instance;
+                if (dialogueUI != null && !dialogueUI.IsActive)
+                {
+                    _dialogueStarted = true;
+                    dialogueUI.StartDialogue(this, reaction, (success) =>
                     {
-                        // Sale logic is now handled internally inside DialogueUI (like SellMultiple handles 2-for-1 bargains)
-                        _state = NPCState.Buying;
-                    }
-                    else
-                    {
-                        _state = NPCState.Leaving;
-                        GoToExit();
-                    }
-                    _dialogueStarted = false;
-                });
+                        if (success)
+                        {
+                            _state = NPCState.Buying;
+                        }
+                        else
+                        {
+                            _state = NPCState.Leaving;
+                            GoToExit();
+                        }
+                        _dialogueStarted = false;
+                    });
+                }
             }
             else
             {
-                float fairPrice = quality * priceToleranceBase;
-                fairPrice *= (1f + reaction * 0.01f);
-
-                if (_targetStand.Price <= fairPrice)
+                // Wait for the player to place a drink
+                _evaluateTimer -= Time.deltaTime;
+                if (_evaluateTimer <= 0f)
                 {
-                    _targetStand.SellOne();
-                    _state = NPCState.Buying;
-                }
-                else
-                {
+                    Debug.Log($"{gameObject.name} left the counter due to waiting too long for a drink.");
                     _state = NPCState.Leaving;
                     GoToExit();
                 }
@@ -186,15 +436,51 @@ namespace LemonEmpire.Trading
         private void GoToExit()
         {
             if (_exitPoint != null)
-                _agent.SetDestination(_exitPoint.position);
+                SetDestinationSafe(_exitPoint.position);
             else
-                _agent.SetDestination(transform.position + Vector3.forward * 20f);
+                SetDestinationSafe(transform.position + Vector3.forward * 20f);
+        }
+
+        private void SetDestinationSafe(Vector3 target)
+        {
+            if (_agent == null) _agent = GetComponent<NavMeshAgent>();
+            if (!_agent.enabled) return;
+
+            if (_agent.isOnNavMesh)
+            {
+                _agent.SetDestination(target);
+            }
+            else
+            {
+                StartCoroutine(SetDestinationWhenOnNavMesh(target));
+            }
+        }
+
+        private IEnumerator SetDestinationWhenOnNavMesh(Vector3 target)
+        {
+            while (_agent != null && _agent.enabled && !_agent.isOnNavMesh)
+            {
+                yield return null;
+            }
+            if (_agent != null && _agent.enabled && _agent.isOnNavMesh)
+            {
+                _agent.SetDestination(target);
+            }
         }
 
         public void ForceLeave()
         {
+            _isSitting = false;
+            _assignedTable = null;
+            _assignedChair = null;
             _state = NPCState.Leaving;
+
+            if (!_agent.enabled)
+            {
+                _agent.enabled = true;
+            }
             GoToExit();
         }
     }
 }
+
