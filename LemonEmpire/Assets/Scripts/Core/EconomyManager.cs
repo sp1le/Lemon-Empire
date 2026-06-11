@@ -45,6 +45,14 @@ namespace LemonEmpire.Core
             return true;
         }
 
+        public void ForceSpend(float amount)
+        {
+            if (amount <= 0f) return;
+            _balance -= amount;
+            DailyExpenses += amount;
+            OnBalanceChanged?.Invoke(_balance);
+        }
+
         public void Earn(float amount)
         {
             if (amount <= 0f) return;

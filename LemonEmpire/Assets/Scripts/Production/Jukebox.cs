@@ -8,9 +8,11 @@ namespace LemonEmpire.Production
         private bool _isPlaying = false;
         private AudioSource _audioSource;
 
+        public bool IsPlaying => _isPlaying;
+
         public string InteractionPrompt => _isPlaying ? "[E] Выключить музыку" : "[E] Включить Lo-Fi музыку";
 
-        public bool CanInteract => true;
+        public bool CanInteract => UpgradeManager.HasJukebox;
 
         private void Awake()
         {

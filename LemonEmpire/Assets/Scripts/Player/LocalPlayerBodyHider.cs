@@ -51,6 +51,7 @@ namespace LemonEmpire.Player
                 {
                     // Вместо полного отключения, оставляем только тени
                     renderer.shadowCastingMode = hiddenBodyShadowMode;
+                    renderer.updateWhenOffscreen = true; // Гарантирует анимацию теней при скрытом основном меше
                     Debug.Log($"[LocalPlayerBodyHider] Скрыт меш (тени остались): {renderer.name}");
                 }
             }

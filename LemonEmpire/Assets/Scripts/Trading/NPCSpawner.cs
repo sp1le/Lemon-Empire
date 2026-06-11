@@ -52,10 +52,21 @@ namespace LemonEmpire.Trading
             _spawnTimer -= Time.deltaTime;
             if (_spawnTimer <= 0f)
             {
-                _spawnTimer = spawnInterval + Random.Range(-spawnIntervalVariance, spawnIntervalVariance);
+                float currentInterval = spawnInterval;
+                float currentVariance = spawnIntervalVariance;
+                int currentMax = maxNPCs;
+
+                if (UpgradeManager.HasNeonSigns)
+                {
+                    currentInterval *= 0.60f; // 40% speed up (interval reduction)
+                    currentVariance *= 0.60f;
+                    currentMax = Mathf.RoundToInt(maxNPCs * 1.40f); // 40% increase
+                }
+
+                _spawnTimer = currentInterval + Random.Range(-currentVariance, currentVariance);
 
                 _currentNPCCount = FindObjectsByType<NPCBuyer>(FindObjectsSortMode.None).Length;
-                if (_currentNPCCount >= maxNPCs) return;
+                if (_currentNPCCount >= currentMax) return;
 
                 SpawnNPC();
             }

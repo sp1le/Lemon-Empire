@@ -39,6 +39,7 @@ namespace LemonEmpire.Trading
         private float _evaluateTimer;
         private Transform _exitPoint;
         private Transform _playerTransform;
+        private Animator _animator;
 
         // Seated table variables
         private CustomerTable _assignedTable;
@@ -68,6 +69,17 @@ namespace LemonEmpire.Trading
             _agent = GetComponent<NavMeshAgent>();
             _agent.speed = 2.5f;
             _agent.stoppingDistance = 1.5f;
+
+            _animator = GetComponent<Animator>();
+            if (_animator == null)
+            {
+                _animator = GetComponentInChildren<Animator>();
+            }
+
+            if (_animator != null)
+            {
+                _animator.SetBool("IsGrounded", true);
+            }
 
             // Generate archetype based on active trend
             Archetype = ChooseArchetype();
@@ -140,35 +152,87 @@ namespace LemonEmpire.Trading
         private NPCArchetype ChooseArchetype()
         {
             float rand = Random.value;
+            bool hasNeon = UpgradeManager.HasNeonSigns;
+
             switch (GameEventManager.CurrentTrend)
             {
                 case DailyTrend.HeatWave:
-                    if (rand < 0.30f) return NPCArchetype.Hipsters;
-                    else if (rand < 0.60f) return NPCArchetype.Athletes;
-                    else if (rand < 0.80f) return NPCArchetype.Kids;
-                    else return NPCArchetype.PartyAnimals;
+                    if (hasNeon)
+                    {
+                        if (rand < 0.40f) return NPCArchetype.Hipsters;
+                        else if (rand < 0.55f) return NPCArchetype.Athletes;
+                        else if (rand < 0.70f) return NPCArchetype.Kids;
+                        else return NPCArchetype.PartyAnimals;
+                    }
+                    else
+                    {
+                        if (rand < 0.30f) return NPCArchetype.Hipsters;
+                        else if (rand < 0.60f) return NPCArchetype.Athletes;
+                        else if (rand < 0.80f) return NPCArchetype.Kids;
+                        else return NPCArchetype.PartyAnimals;
+                    }
 
                 case DailyTrend.PartyNight:
-                    if (rand < 0.80f) return NPCArchetype.PartyAnimals;
-                    else if (rand < 0.8667f) return NPCArchetype.Kids;
-                    else if (rand < 0.9334f) return NPCArchetype.Athletes;
-                    else return NPCArchetype.Hipsters;
+                    if (hasNeon)
+                    {
+                        if (rand < 0.75f) return NPCArchetype.PartyAnimals;
+                        else if (rand < 0.90f) return NPCArchetype.Hipsters;
+                        else if (rand < 0.95f) return NPCArchetype.Kids;
+                        else return NPCArchetype.Athletes;
+                    }
+                    else
+                    {
+                        if (rand < 0.80f) return NPCArchetype.PartyAnimals;
+                        else if (rand < 0.8667f) return NPCArchetype.Kids;
+                        else if (rand < 0.9334f) return NPCArchetype.Athletes;
+                        else return NPCArchetype.Hipsters;
+                    }
 
                 case DailyTrend.KidDay:
-                    if (rand < 0.80f) return NPCArchetype.Kids;
-                    else if (rand < 0.8667f) return NPCArchetype.Athletes;
-                    else if (rand < 0.9334f) return NPCArchetype.Hipsters;
-                    else return NPCArchetype.PartyAnimals;
+                    if (hasNeon)
+                    {
+                        if (rand < 0.75f) return NPCArchetype.Kids;
+                        else if (rand < 0.85f) return NPCArchetype.Hipsters;
+                        else if (rand < 0.95f) return NPCArchetype.PartyAnimals;
+                        else return NPCArchetype.Athletes;
+                    }
+                    else
+                    {
+                        if (rand < 0.80f) return NPCArchetype.Kids;
+                        else if (rand < 0.8667f) return NPCArchetype.Athletes;
+                        else if (rand < 0.9334f) return NPCArchetype.Hipsters;
+                        else return NPCArchetype.PartyAnimals;
+                    }
 
                 case DailyTrend.Marathon:
-                    if (rand < 0.80f) return NPCArchetype.Athletes;
-                    else if (rand < 0.8667f) return NPCArchetype.Kids;
-                    else if (rand < 0.9334f) return NPCArchetype.Hipsters;
-                    else return NPCArchetype.PartyAnimals;
+                    if (hasNeon)
+                    {
+                        if (rand < 0.75f) return NPCArchetype.Athletes;
+                        else if (rand < 0.875f) return NPCArchetype.Hipsters;
+                        else if (rand < 1.0f) return NPCArchetype.PartyAnimals;
+                        else return NPCArchetype.Kids;
+                    }
+                    else
+                    {
+                        if (rand < 0.80f) return NPCArchetype.Athletes;
+                        else if (rand < 0.8667f) return NPCArchetype.Kids;
+                        else if (rand < 0.9334f) return NPCArchetype.Hipsters;
+                        else return NPCArchetype.PartyAnimals;
+                    }
 
                 case DailyTrend.Normal:
                 default:
-                    return (NPCArchetype)Random.Range(0, 4);
+                    if (hasNeon)
+                    {
+                        if (rand < 0.35f) return NPCArchetype.Hipsters;
+                        else if (rand < 0.70f) return NPCArchetype.PartyAnimals;
+                        else if (rand < 0.85f) return NPCArchetype.Kids;
+                        else return NPCArchetype.Athletes;
+                    }
+                    else
+                    {
+                        return (NPCArchetype)Random.Range(0, 4);
+                    }
             }
         }
 
@@ -269,6 +333,12 @@ namespace LemonEmpire.Trading
 
         private void Update()
         {
+            if (_animator != null)
+            {
+                float currentSpeed = (_agent != null && _agent.enabled && _agent.isOnNavMesh) ? _agent.velocity.magnitude : 0f;
+                _animator.SetFloat("Speed", currentSpeed);
+            }
+
             if (_agent == null || !_agent.enabled || !_agent.isOnNavMesh)
                 return;
 
@@ -349,7 +419,25 @@ namespace LemonEmpire.Trading
                     cleanliness = LemonEmpire.Core.ShopCleanlinessManager.Instance.Cleanliness;
                 }
                 float patienceMultiplier = Mathf.Clamp(cleanliness / 100f, 0.1f, 1f);
-                _evaluateTimer = baseWait * patienceMultiplier;
+
+                bool isJukeboxPlaying = false;
+                if (UpgradeManager.HasJukebox)
+                {
+                    var jb = FindFirstObjectByType<Jukebox>();
+                    if (jb != null && jb.IsPlaying)
+                    {
+                        isJukeboxPlaying = true;
+                    }
+                }
+
+                if (isJukeboxPlaying)
+                {
+                    _evaluateTimer = baseWait * patienceMultiplier * 2.0f; // doubled patience!
+                }
+                else
+                {
+                    _evaluateTimer = baseWait * patienceMultiplier;
+                }
             }
         }
 

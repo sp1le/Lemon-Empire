@@ -23165,7 +23165,7 @@ Animator:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 678541435}
   m_Enabled: 1
-  m_Avatar: {fileID: 0}
+  m_Avatar: {fileID: 9000000, guid: 321f0b6a7d2296848823b82d1c62cde5, type: 3}
   m_Controller: {fileID: 9100000, guid: d2f73a21da5dc0042aa111c21a7ae3d1, type: 2}
   m_CullingMode: 0
   m_UpdateMode: 0
@@ -26180,7 +26180,7 @@ MonoBehaviour:
     deliveryTime: 2
   deliveryZone: {fileID: 818120466}
   deliverySpacing: 1.2
-  customDrinkPrefab: {fileID: 0}
+  uiDocument: {fileID: 0}
 --- !u!1 &752423628
 GameObject:
   m_ObjectHideFlags: 0
@@ -53556,6 +53556,7 @@ MonoBehaviour:
   - {fileID: 118942033}
   - {fileID: 122447102}
   bottleRotationOffset: 90
+  bottleVerticalOffset: 0.135
   targetTemp: 5
   coolRate: 2
   weeklyElectricityFee: 50
@@ -63186,6 +63187,7 @@ MonoBehaviour:
   - {fileID: 1131323595}
   - {fileID: 1940264535}
   bottleRotationOffset: 90
+  bottleVerticalOffset: 0.135
 --- !u!1 &1884586375
 GameObject:
   m_ObjectHideFlags: 0

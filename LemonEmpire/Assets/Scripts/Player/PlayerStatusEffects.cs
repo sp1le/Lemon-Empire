@@ -20,6 +20,8 @@ namespace LemonEmpire.Player
         [SerializeField] private float _carbonationTimer = 0f;
         [SerializeField] private float _alcoholTimer = 0f;
         private float _nextHiccupTime = 0f;
+        private float _alcoholScrambleAngle = 0f;
+        private float _scrambleShuffleTimer = 0f;
 
         [Header("FOV Warp Settings")]
         private float _baseFov = 60f;
@@ -73,6 +75,22 @@ namespace LemonEmpire.Player
             if (_alcoholTimer > 0f)
             {
                 _alcoholTimer -= Time.deltaTime;
+                _scrambleShuffleTimer -= Time.deltaTime;
+                if (_scrambleShuffleTimer <= 0f)
+                {
+                    int choice = Random.Range(0, 3);
+                    if (choice == 0) _alcoholScrambleAngle = 90f;
+                    else if (choice == 1) _alcoholScrambleAngle = 180f;
+                    else _alcoholScrambleAngle = 270f;
+
+                    _scrambleShuffleTimer = 15f;
+                    Debug.Log($"[PlayerStatusEffects] Alcohol scrambled controls! New rotation angle: {_alcoholScrambleAngle} degrees.");
+                }
+            }
+            else
+            {
+                _alcoholScrambleAngle = 0f;
+                _scrambleShuffleTimer = 0f;
             }
 
             // Coffee Collapse tracking
@@ -225,6 +243,23 @@ namespace LemonEmpire.Player
             }
 
             return mult;
+        }
+
+        public Vector2 GetAlcoholicDistortedInput(Vector2 input)
+        {
+            if (!IsAlcoholIntoxicationActive || _alcoholScrambleAngle == 0f)
+            {
+                return input;
+            }
+
+            float rad = _alcoholScrambleAngle * Mathf.Deg2Rad;
+            float cos = Mathf.Cos(rad);
+            float sin = Mathf.Sin(rad);
+
+            float newX = input.x * cos - input.y * sin;
+            float newY = input.x * sin + input.y * cos;
+
+            return new Vector2(newX, newY);
         }
 
         private void UpdateCameraFov()

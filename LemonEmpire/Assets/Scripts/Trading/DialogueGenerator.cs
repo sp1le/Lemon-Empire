@@ -197,14 +197,15 @@ namespace LemonEmpire.Trading
             }
 
             string verdictText = "";
+            float toleranceMultiplier = bottle.Temperature <= 12f ? 1.3f : 1.0f;
 
             if (matchCount == totalExpectedMatches)
             {
-                if (bottle.RetailPrice <= 25)
+                if (bottle.RetailPrice <= 25 * toleranceMultiplier)
                 {
                     verdictText = "Лимонад просто идеальный! И цена отличная, беру без лишних слов!";
                 }
-                else if (bottle.RetailPrice <= 45)
+                else if (bottle.RetailPrice <= 45 * toleranceMultiplier)
                 {
                     wantsHaggle = true;
                     discountAmount = Mathf.RoundToInt(bottle.RetailPrice * 0.3f);
@@ -217,11 +218,11 @@ namespace LemonEmpire.Trading
             }
             else if (matchCount >= (totalExpectedMatches / 2))
             {
-                if (bottle.RetailPrice <= 15)
+                if (bottle.RetailPrice <= 15 * toleranceMultiplier)
                 {
                     verdictText = "Не все параметры совпали, но цена копеечная. Забираю!";
                 }
-                else if (bottle.RetailPrice <= 30)
+                else if (bottle.RetailPrice <= 30 * toleranceMultiplier)
                 {
                     wantsHaggle = true;
                     discountAmount = Mathf.RoundToInt(bottle.RetailPrice * 0.4f);

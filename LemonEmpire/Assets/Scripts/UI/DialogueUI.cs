@@ -37,6 +37,7 @@ namespace LemonEmpire.UI
         private int _currentHaggleDiscount = 0;
         private bool _isDesperate = false;
         private float _jitterTimer = 0f;
+        private static int _illegalSalesCount = 0;
 
         private void Awake()
         {
@@ -559,6 +560,49 @@ namespace LemonEmpire.UI
 
             if (_npcDialogueTextLabel != null)
                 _npcDialogueTextLabel.text = generatedText;
+
+            if (npc.Archetype == NPCArchetype.Kids && bottle.Alcohol > 0f)
+            {
+                AddDialogueButton("🔴 Попытаться продать из-под полы", new Color(0.95f, 0.38f, 0.35f, 1f), true, () => {
+                    float catchChance = 0.30f + 0.20f * _illegalSalesCount;
+                    if (UnityEngine.Random.value < catchChance)
+                    {
+                        if (EconomyManager.Instance != null)
+                        {
+                            EconomyManager.Instance.ForceSpend(500f);
+                        }
+
+                        var counter = FindFirstObjectByType<Production.ServiceCounter>();
+                        if (counter != null && counter.PlacedDrink == bottle)
+                        {
+                            counter.ClearPlacedDrink();
+                        }
+                        bottle.Consume();
+                        _illegalSalesCount = 0;
+
+                        if (_npcDialogueTextLabel != null)
+                        {
+                            _npcDialogueTextLabel.text = $"[ПОЛИЦИЯ] Вас поймали на продаже алкоголя несовершеннолетнему!\nНаложен штраф $500! Напиток конфискован.";
+                        }
+                        ShowServiceCloseButton(false);
+                    }
+                    else
+                    {
+                        _illegalSalesCount++;
+                        SellBottle(bottle, bottle.RetailPrice);
+                        if (_npcDialogueTextLabel != null)
+                        {
+                            _npcDialogueTextLabel.text = $"[Сделка успешна] Вам повезло! Ребенок тихо забрал бутылку и ушел. (Безнаказанных сделок подряд: {_illegalSalesCount})";
+                        }
+                    }
+                });
+
+                AddDialogueButton("Отказать в сделке / Забрать бутылку", new Color(0.95f, 0.38f, 0.35f, 1f), true, () => {
+                    CancelServiceDeal(bottle);
+                });
+
+                return;
+            }
 
             float morale = PlayerVitals.Instance != null ? PlayerVitals.Instance.Morale : 50f;
             float cash = EconomyManager.Instance != null ? EconomyManager.Instance.Balance : 1000f;

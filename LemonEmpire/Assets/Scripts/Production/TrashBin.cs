@@ -6,7 +6,7 @@ namespace LemonEmpire.Production
 {
     public class TrashBin : MonoBehaviour, IInteractable
     {
-        public bool CanInteract => true;
+        public bool CanInteract => UpgradeManager.HasTrashBin;
 
         public string InteractionPrompt
         {

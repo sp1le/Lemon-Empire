@@ -1804,6 +1804,8 @@ namespace LemonEmpire.UI
                 ("Торговый автомат (Snacks)",       "Торговый автомат (Snacks)",       150, () => UpgradeManager.HasSnackVending),
                 ("Неоновая вывеска (Neon)",         "Неоновая вывеска (Neon)",         250, () => UpgradeManager.HasNeonSigns),
                 ("Уличная мусорка для коробок",     "Уличная мусорка для коробок",     200, () => UpgradeManager.HasTrashBin),
+                ("Двойной холодильник (Double)",    "Двойной холодильник",             600, () => UpgradeManager.HasDoubleCooler),
+                ("Премиум-полки (Premium)",        "Премиум-полки",                   400, () => UpgradeManager.HasPremiumShelves),
             };
 
             var scroll = new ScrollView();

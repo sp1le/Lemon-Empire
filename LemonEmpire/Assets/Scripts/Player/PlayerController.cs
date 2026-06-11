@@ -81,7 +81,17 @@ namespace LemonEmpire.Player
 
         #region Input Setters
 
-        public void SetMoveInput(Vector2 input) => _moveInput = input;
+        public void SetMoveInput(Vector2 input)
+        {
+            if (PlayerStatusEffects.Instance != null)
+            {
+                _moveInput = PlayerStatusEffects.Instance.GetAlcoholicDistortedInput(input);
+            }
+            else
+            {
+                _moveInput = input;
+            }
+        }
         public void SetSprintInput(bool sprinting) => _isSprinting = sprinting;
         public void TriggerJump()
         {

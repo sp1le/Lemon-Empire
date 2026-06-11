@@ -9,6 +9,8 @@ namespace LemonEmpire.Core
         public static bool HasSnackVending = false;
         public static bool HasNeonSigns = false;
         public static bool HasTrashBin = false;
+        public static bool HasDoubleCooler = false;
+        public static bool HasPremiumShelves = false;
 
         public static bool TryPurchaseUpgrade(string name, int cost)
         {
@@ -41,6 +43,16 @@ namespace LemonEmpire.Core
                 case "HasTrashBin":
                 case "TrashBin":
                     isPurchased = HasTrashBin;
+                    break;
+                case "Двойной холодильник":
+                case "HasDoubleCooler":
+                case "DoubleCooler":
+                    isPurchased = HasDoubleCooler;
+                    break;
+                case "Премиум-полки":
+                case "HasPremiumShelves":
+                case "PremiumShelves":
+                    isPurchased = HasPremiumShelves;
                     break;
                 default:
                     return false;
@@ -76,6 +88,16 @@ namespace LemonEmpire.Core
                     case "HasTrashBin":
                     case "TrashBin":
                         HasTrashBin = true;
+                        break;
+                    case "Двойной холодильник":
+                    case "HasDoubleCooler":
+                    case "DoubleCooler":
+                        HasDoubleCooler = true;
+                        break;
+                    case "Премиум-полки":
+                    case "HasPremiumShelves":
+                    case "PremiumShelves":
+                        HasPremiumShelves = true;
                         break;
                 }
                 return true;

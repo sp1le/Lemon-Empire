@@ -14,11 +14,12 @@ namespace LemonEmpire.Production
 
         [Header("Visual Alignment")]
         [SerializeField] protected float bottleRotationOffset = 90f;
+        [SerializeField] protected float bottleVerticalOffset = 0.135f;
 
         protected List<ItemBase> shelfItems = new List<ItemBase>();
 
         public IReadOnlyList<ItemBase> ShelfItems => shelfItems;
-        public int MaxCapacity => maxCapacity;
+        public virtual int MaxCapacity => UpgradeManager.HasPremiumShelves ? 36 : maxCapacity;
 
         public float RetailPrice => retailPrice;
 
@@ -36,14 +37,14 @@ namespace LemonEmpire.Production
                     {
                         if (item.IsCrate)
                         {
-                            if (item.Amount > 0 && shelfItems.Count < maxCapacity)
+                            if (item.Amount > 0 && shelfItems.Count < MaxCapacity)
                             {
                                 return $"[E] Выгрузить {item.DrinkName} на полку ({item.Amount} шт в коробке)";
                             }
                         }
                         else
                         {
-                            if (shelfItems.Count < maxCapacity)
+                            if (shelfItems.Count < MaxCapacity)
                             {
                                 return $"[E] Поставить {item.DrinkName} на полку";
                             }
@@ -146,7 +147,7 @@ namespace LemonEmpire.Production
                 {
                     if (item.IsCrate)
                     {
-                        if (item.Amount > 0 && shelfItems.Count < maxCapacity)
+                        if (item.Amount > 0 && shelfItems.Count < MaxCapacity)
                         {
                             ItemBase bottleToPlace = null;
                             var bottlePrefab = Resources.Load<GameObject>("LemonadeBottle");
@@ -171,7 +172,7 @@ namespace LemonEmpire.Production
                     }
                     else
                     {
-                        if (shelfItems.Count < maxCapacity)
+                        if (shelfItems.Count < MaxCapacity)
                         {
                             var bottleToPlace = context.PlayerCarry.TakeItem();
                             if (bottleToPlace != null)
@@ -234,7 +235,7 @@ namespace LemonEmpire.Production
                 if (shelfSlots != null && i < shelfSlots.Length && shelfSlots[i] != null)
                 {
                     shelfItems[i].transform.SetParent(shelfSlots[i]);
-                    shelfItems[i].transform.localPosition = Vector3.zero;
+                    shelfItems[i].transform.localPosition = new Vector3(0f, bottleVerticalOffset, 0f);
                     shelfItems[i].transform.rotation = this.transform.rotation * Quaternion.Euler(0f, bottleRotationOffset, 0f);
                 }
                 else
@@ -245,7 +246,7 @@ namespace LemonEmpire.Production
                     float x = (i % 4) * 0.2f - 0.3f;
                     float y = (i / 4) * 0.4f + 0.2f;
                     float z = 0f;
-                    shelfItems[i].transform.localPosition = new Vector3(x, y, z);
+                    shelfItems[i].transform.localPosition = new Vector3(x, y + bottleVerticalOffset, z);
                     shelfItems[i].transform.rotation = this.transform.rotation * Quaternion.Euler(0f, bottleRotationOffset, 0f);
                 }
             }

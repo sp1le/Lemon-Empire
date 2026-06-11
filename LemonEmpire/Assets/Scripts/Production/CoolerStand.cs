@@ -10,6 +10,19 @@ namespace LemonEmpire.Production
         [SerializeField] private float coolRate = 2f;
         [SerializeField] private int weeklyElectricityFee = 50;
 
+        public override int MaxCapacity
+        {
+            get
+            {
+                int cap = base.MaxCapacity;
+                if (UpgradeManager.HasDoubleCooler)
+                {
+                    cap = Mathf.Max(cap, 24);
+                }
+                return cap;
+            }
+        }
+
         protected override void Start()
         {
             base.Start();
@@ -30,6 +43,12 @@ namespace LemonEmpire.Production
 
         private void Update()
         {
+            float rate = coolRate;
+            if (UpgradeManager.HasDoubleCooler)
+            {
+                rate *= 2f;
+            }
+
             // Loop through all shelfItems. If an item's temperature is above targetTemp, reduce it towards targetTemp
             for (int i = shelfItems.Count - 1; i >= 0; i--)
             {
@@ -38,7 +57,7 @@ namespace LemonEmpire.Production
                 {
                     if (item.Temperature > targetTemp)
                     {
-                        item.Temperature = Mathf.Max(targetTemp, item.Temperature - Time.deltaTime * coolRate);
+                        item.Temperature = Mathf.Max(targetTemp, item.Temperature - Time.deltaTime * rate);
                     }
                 }
             }
@@ -53,8 +72,9 @@ namespace LemonEmpire.Production
             {
                 if (EconomyManager.Instance != null)
                 {
-                    EconomyManager.Instance.TrySpend(weeklyElectricityFee);
-                    Debug.Log($"CoolerStand: Deducted weekly electricity fee of ${weeklyElectricityFee}");
+                    float fee = UpgradeManager.HasDoubleCooler ? 90f : weeklyElectricityFee;
+                    EconomyManager.Instance.TrySpend(fee);
+                    Debug.Log($"CoolerStand: Deducted weekly electricity fee of ${fee}");
                 }
             }
         }
