@@ -839,8 +839,6 @@ namespace LemonEmpire.Core
             // Scroll View for items
             var scrollView = new ScrollView(ScrollViewMode.Horizontal);
             scrollView.style.flexGrow = 1f;
-            scrollView.style.paddingLeft = 8f;
-            scrollView.style.paddingRight = 8f;
             scrollView.horizontalScrollerVisibility = ScrollerVisibility.Auto;
             scrollView.verticalScrollerVisibility = ScrollerVisibility.Hidden;
             _catalogPanel.Add(scrollView);
@@ -913,6 +911,8 @@ namespace LemonEmpire.Core
             _itemContainer = new VisualElement();
             _itemContainer.style.flexDirection = FlexDirection.Row;
             _itemContainer.style.alignItems = Align.Center;
+            _itemContainer.style.paddingLeft = 24f;
+            _itemContainer.style.paddingRight = 24f;
             _itemContainer.style.marginBottom = 6f;
             scrollView.Add(_itemContainer);
 
