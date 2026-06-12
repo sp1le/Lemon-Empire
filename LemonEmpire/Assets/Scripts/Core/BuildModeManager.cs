@@ -233,9 +233,6 @@ namespace LemonEmpire.Core
         {
             // Snap position to 0.5m grid
             Vector2Int gridCell = _grid.WorldToGrid(obj.transform.position);
-            Vector3 snappedPos = _grid.GridToWorld(gridCell);
-            snappedPos.y = obj.transform.position.y; // Keep original height
-            obj.transform.position = snappedPos;
 
             // Snap rotation to 90 deg steps
             float rotY = Mathf.Round(obj.transform.eulerAngles.y / 90f) * 90f;
@@ -246,6 +243,24 @@ namespace LemonEmpire.Core
 
             // Calculate occupied cells exactly based on SO size
             List<Vector2Int> cells = GetOccupiedCells(gridCell, itemSO.sizeInCells, rotAngle);
+
+            // Nudge away from walls/static obstacles if blocked
+            int safetyCounter = 0;
+            while (safetyCounter < 5 && _grid.AreCellsOccupied(cells))
+            {
+                if (gridCell.x >= 40) gridCell.x--;
+                else if (gridCell.x <= 7) gridCell.x++;
+                
+                if (gridCell.y >= 40) gridCell.y--;
+                else if (gridCell.y <= 7) gridCell.y++;
+
+                cells = GetOccupiedCells(gridCell, itemSO.sizeInCells, rotAngle);
+                safetyCounter++;
+            }
+
+            Vector3 snappedPos = _grid.GridToWorld(gridCell);
+            snappedPos.y = obj.transform.position.y; // Keep original height
+            obj.transform.position = snappedPos;
 
             var placed = obj.AddComponent<PlacedFurniture>();
             placed.Setup(itemSO, cells, cost);
