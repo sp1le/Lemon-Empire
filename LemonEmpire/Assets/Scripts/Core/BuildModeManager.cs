@@ -775,15 +775,15 @@ namespace LemonEmpire.Core
             _catalogPanel.style.bottom = 30f;
             _catalogPanel.style.alignSelf = Align.Center;
             _catalogPanel.style.width = 880f;
-            _catalogPanel.style.height = 230f;
+            _catalogPanel.style.height = 240f;
             _catalogPanel.style.backgroundColor = new StyleColor(new Color(0.06f, 0.06f, 0.07f, 0.95f));
             _catalogPanel.style.SetBorderRadius(24f);
             _catalogPanel.style.SetBorderWidth(1.5f);
             _catalogPanel.style.SetBorderColor(new Color(0.91f, 0.64f, 0.26f, 0.85f)); // Gold border
             _catalogPanel.style.paddingLeft = 24f;
             _catalogPanel.style.paddingRight = 24f;
-            _catalogPanel.style.paddingTop = 16f;
-            _catalogPanel.style.paddingBottom = 16f;
+            _catalogPanel.style.paddingTop = 12f;
+            _catalogPanel.style.paddingBottom = 12f;
             _catalogPanel.style.display = DisplayStyle.None;
             root.Add(_catalogPanel);
 
@@ -832,8 +832,8 @@ namespace LemonEmpire.Core
             var divider = new VisualElement();
             divider.style.height = 1f;
             divider.style.backgroundColor = new StyleColor(new Color(0.91f, 0.64f, 0.26f, 0.25f));
-            divider.style.marginTop = 6f;
-            divider.style.marginBottom = 12f;
+            divider.style.marginTop = 4f;
+            divider.style.marginBottom = 8f;
             _catalogPanel.Add(divider);
 
             // Scroll View for items
@@ -850,8 +850,8 @@ namespace LemonEmpire.Core
             if (scroller != null)
             {
                 scroller.style.height = 6f;
-                scroller.style.marginTop = 12f;
-                scroller.style.marginBottom = 4f;
+                scroller.style.marginTop = 8f;
+                scroller.style.marginBottom = 2f;
                 scroller.style.backgroundColor = Color.clear;
 
                 var lowBtn = scroller.Q("unity-low-button");
