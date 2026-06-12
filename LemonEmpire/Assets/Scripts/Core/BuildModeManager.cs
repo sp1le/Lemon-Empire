@@ -832,7 +832,7 @@ namespace LemonEmpire.Core
             var scroller = scrollView.horizontalScroller;
             if (scroller != null)
             {
-                scroller.style.height = 10f;
+                scroller.style.height = 12f;
                 scroller.style.marginTop = 10f;
                 scroller.style.marginBottom = 2f;
                 scroller.style.backgroundColor = Color.clear;
@@ -849,8 +849,8 @@ namespace LemonEmpire.Core
                     tracker.style.backgroundColor = new StyleColor(new Color(0.12f, 0.12f, 0.14f, 0.6f));
                     tracker.style.SetBorderColor(Color.clear);
                     tracker.style.SetBorderWidth(0f);
-                    tracker.style.SetBorderRadius(5f);
-                    tracker.style.height = 8f;
+                    tracker.style.SetBorderRadius(2f);
+                    tracker.style.height = 4f;
                 }
 
                 var dragger = scroller.Q("unity-dragger");
@@ -859,8 +859,9 @@ namespace LemonEmpire.Core
                     dragger.style.backgroundColor = new StyleColor(new Color(0.91f, 0.64f, 0.26f, 0.5f)); // Soft translucent gold
                     dragger.style.SetBorderColor(Color.clear);
                     dragger.style.SetBorderWidth(0f);
-                    dragger.style.SetBorderRadius(5f);
-                    dragger.style.height = 8f;
+                    dragger.style.SetBorderRadius(3f);
+                    dragger.style.height = 6f;
+                    dragger.style.maxWidth = 100f; // Prevent the scroll handle from stretching too wide
 
                     dragger.RegisterCallback<MouseEnterEvent>(evt => {
                         dragger.style.backgroundColor = new StyleColor(new Color(0.91f, 0.64f, 0.26f, 0.9f));
@@ -984,6 +985,7 @@ namespace LemonEmpire.Core
                 var badge = new Label(GetCategoryText(item.category));
                 badge.style.fontSize = 9f;
                 badge.style.unityFontStyleAndWeight = FontStyle.Bold;
+                badge.style.unityTextAlign = TextAnchor.MiddleCenter;
                 badge.style.paddingLeft = 6f;
                 badge.style.paddingRight = 6f;
                 badge.style.paddingTop = 2f;
