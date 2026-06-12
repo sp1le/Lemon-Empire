@@ -36,7 +36,7 @@ namespace LemonEmpire.Player
 
         private void Update()
         {
-            if (IsInputBlocked) return;
+            if (IsInputBlocked || (BuildModeManager.Instance != null && BuildModeManager.Instance.IsBuildModeActive)) return;
 
             // Handle drink consumption! If holding a drink or looking at one, press R to drink it
             if (UnityEngine.InputSystem.Keyboard.current != null && UnityEngine.InputSystem.Keyboard.current.rKey.wasPressedThisFrame)
@@ -98,6 +98,7 @@ namespace LemonEmpire.Player
         }
 
         private bool IsInputBlocked => Cursor.visible;
+        private bool IsGameplayBlocked => IsInputBlocked || (BuildModeManager.Instance != null && BuildModeManager.Instance.IsBuildModeActive);
 
         private void OnMove(InputValue value)
         {
@@ -119,25 +120,37 @@ namespace LemonEmpire.Player
 
         private void OnInteract(InputValue value)
         {
-            if (IsInputBlocked) return;
+            if (BuildModeManager.Instance != null && BuildModeManager.Instance.IsBuildModeActive)
+            {
+                if (value.isPressed)
+                    BuildModeManager.Instance.OnLeftClick();
+                return;
+            }
+            if (IsGameplayBlocked) return;
             playerInteraction?.TriggerInteraction();
         }
 
         private void OnSecondaryInteract(InputValue value)
         {
-            if (IsInputBlocked) return;
+            if (BuildModeManager.Instance != null && BuildModeManager.Instance.IsBuildModeActive)
+            {
+                if (value.isPressed)
+                    BuildModeManager.Instance.OnRightClick();
+                return;
+            }
+            if (IsGameplayBlocked) return;
             playerInteraction?.TriggerSecondaryInteraction();
         }
 
         private void OnJump(InputValue value)
         {
-            if (IsInputBlocked) return;
+            if (IsGameplayBlocked) return;
             playerController?.TriggerJump();
         }
 
         private void OnScrollZoom(InputValue value)
         {
-            if (IsInputBlocked) return;
+            if (IsGameplayBlocked) return;
             Vector2 scroll = value.Get<Vector2>();
             if (Mathf.Abs(scroll.y) > 0.01f)
                 thirdPersonCamera?.SetScrollInput(scroll.y);
@@ -145,6 +158,7 @@ namespace LemonEmpire.Player
 
         private void OnTablet(InputValue value)
         {
+            if (IsGameplayBlocked) return;
             tabletUI?.Toggle();
         }
 
@@ -159,7 +173,7 @@ namespace LemonEmpire.Player
 
         private void OnPriceUp(InputValue value)
         {
-            if (IsInputBlocked) return;
+            if (IsGameplayBlocked) return;
             if (value.isPressed)
             {
                 _priceUpHeld = true;
@@ -175,7 +189,7 @@ namespace LemonEmpire.Player
 
         private void OnPriceDown(InputValue value)
         {
-            if (IsInputBlocked) return;
+            if (IsGameplayBlocked) return;
             if (value.isPressed)
             {
                 _priceDownHeld = true;

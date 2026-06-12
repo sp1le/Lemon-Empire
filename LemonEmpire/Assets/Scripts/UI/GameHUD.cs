@@ -1015,6 +1015,17 @@ namespace LemonEmpire.UI
 
         private void UpdateStrangeStates()
         {
+            if (_summaryOverlay != null && _summaryOverlay.style.display == DisplayStyle.Flex)
+            {
+                if (_sugarRushOverlay != null) _sugarRushOverlay.style.display = DisplayStyle.None;
+                if (_paranoiaOverlay != null) _paranoiaOverlay.style.display = DisplayStyle.None;
+                if (_depressionOverlay != null) _depressionOverlay.style.display = DisplayStyle.None;
+                if (_sanitationPanicOverlay != null) _sanitationPanicOverlay.style.display = DisplayStyle.None;
+                if (_carbonationOverlay != null) _carbonationOverlay.style.display = DisplayStyle.None;
+                if (_alcoholOverlay != null) _alcoholOverlay.style.display = DisplayStyle.None;
+                return;
+            }
+
             var effects = LemonEmpire.Player.PlayerStatusEffects.Instance;
             if (effects == null) return;
 

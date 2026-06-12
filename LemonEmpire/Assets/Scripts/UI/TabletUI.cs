@@ -1852,8 +1852,17 @@ namespace LemonEmpire.UI
             priceLbl.style.unityFontStyleAndWeight = purchased ? FontStyle.Normal : FontStyle.Bold;
             info.Add(priceLbl);
 
+            string itemPath = managerName switch
+            {
+                "Музыкальный автомат (Jukebox)" => "Items/Jukebox",
+                "Торговый автомат (Snacks)" => "Items/VendingMachine",
+                "Двойной холодильник" => "Items/CoolerStand",
+                "Премиум-полки" => "Items/DisplayStand",
+                _ => null
+            };
+
             var actionBtn = new Button();
-            actionBtn.text = purchased ? "✓ Куплено" : "Купить";
+            actionBtn.text = purchased ? "✓ Куплено" : (itemPath != null ? "Разместить" : "Купить");
             actionBtn.style.width  = 130f;
             actionBtn.style.height = 48f;
             actionBtn.style.SetBorderRadius(12f);
@@ -1874,13 +1883,35 @@ namespace LemonEmpire.UI
                 actionBtn.style.backgroundColor = new StyleColor(canAfford ? ColorGreen : new Color(0.75f, 0.2f, 0.2f));
                 actionBtn.style.color           = new StyleColor(Color.white);
 
-                string capManagerName = managerName;
-                int    capCost = cost;
-                actionBtn.clicked += () =>
+                if (itemPath != null)
                 {
-                    if (UpgradeManager.TryPurchaseUpgrade(capManagerName, capCost))
-                        RefreshTab(3); // Rebuild upgrades tab to reflect purchase
-                };
+                    actionBtn.clicked += () =>
+                    {
+                        Close();
+                        if (BuildModeManager.Instance != null)
+                        {
+                            if (!BuildModeManager.Instance.IsBuildModeActive)
+                            {
+                                BuildModeManager.Instance.ToggleBuildMode();
+                            }
+                            var item = Resources.Load<BuildableItemSO>(itemPath);
+                            if (item != null)
+                            {
+                                BuildModeManager.Instance.StartPlacement(item);
+                            }
+                        }
+                    };
+                }
+                else
+                {
+                    string capManagerName = managerName;
+                    int    capCost = cost;
+                    actionBtn.clicked += () =>
+                    {
+                        if (UpgradeManager.TryPurchaseUpgrade(capManagerName, capCost))
+                            RefreshTab(3); // Rebuild upgrades tab to reflect purchase
+                    };
+                }
             }
 
             card.Add(actionBtn);
