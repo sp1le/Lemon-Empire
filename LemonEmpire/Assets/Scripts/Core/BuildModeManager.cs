@@ -828,6 +828,49 @@ namespace LemonEmpire.Core
             scrollView.verticalScrollerVisibility = ScrollerVisibility.Hidden;
             _catalogPanel.Add(scrollView);
 
+            // Style the Scrollbar to look premium and sleek
+            var scroller = scrollView.horizontalScroller;
+            if (scroller != null)
+            {
+                scroller.style.height = 10f;
+                scroller.style.marginTop = 10f;
+                scroller.style.marginBottom = 2f;
+                scroller.style.backgroundColor = Color.clear;
+
+                var lowBtn = scroller.Q("unity-low-button");
+                if (lowBtn != null) lowBtn.style.display = DisplayStyle.None;
+
+                var highBtn = scroller.Q("unity-high-button");
+                if (highBtn != null) highBtn.style.display = DisplayStyle.None;
+
+                var tracker = scroller.Q("unity-tracker");
+                if (tracker != null)
+                {
+                    tracker.style.backgroundColor = new StyleColor(new Color(0.12f, 0.12f, 0.14f, 0.6f));
+                    tracker.style.SetBorderColor(Color.clear);
+                    tracker.style.SetBorderWidth(0f);
+                    tracker.style.SetBorderRadius(5f);
+                    tracker.style.height = 8f;
+                }
+
+                var dragger = scroller.Q("unity-dragger");
+                if (dragger != null)
+                {
+                    dragger.style.backgroundColor = new StyleColor(new Color(0.91f, 0.64f, 0.26f, 0.5f)); // Soft translucent gold
+                    dragger.style.SetBorderColor(Color.clear);
+                    dragger.style.SetBorderWidth(0f);
+                    dragger.style.SetBorderRadius(5f);
+                    dragger.style.height = 8f;
+
+                    dragger.RegisterCallback<MouseEnterEvent>(evt => {
+                        dragger.style.backgroundColor = new StyleColor(new Color(0.91f, 0.64f, 0.26f, 0.9f));
+                    });
+                    dragger.RegisterCallback<MouseLeaveEvent>(evt => {
+                        dragger.style.backgroundColor = new StyleColor(new Color(0.91f, 0.64f, 0.26f, 0.5f));
+                    });
+                }
+            }
+
             _itemContainer = new VisualElement();
             _itemContainer.style.flexDirection = FlexDirection.Row;
             _itemContainer.style.alignItems = Align.Center;
