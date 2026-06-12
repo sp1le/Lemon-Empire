@@ -174,6 +174,16 @@ namespace LemonEmpire.Core
                     continue;
                 }
 
+                // Ignore buildable furniture colliders since they are registered precisely in SetupStartingFurniture
+                if (col.GetComponentInParent<DisplayStand>() != null ||
+                    col.GetComponentInParent<CoolerStand>() != null ||
+                    col.GetComponentInParent<CustomerTable>() != null ||
+                    col.name.Contains("CustomerTableGroup") ||
+                    (col.transform.parent != null && col.transform.parent.name.StartsWith("CustomerTableGroup")))
+                {
+                    continue;
+                }
+
                 // Check Y bounds to see if they overlap with the floor plane (approx -1.30f)
                 // A valid placed furniture must have bounds that cover the floor level (between -1.40f and -1.20f)
                 if (col.bounds.min.y > -1.20f || col.bounds.max.y < -1.40f)
@@ -189,28 +199,19 @@ namespace LemonEmpire.Core
         {
             var displayStands = FindObjectsByType<DisplayStand>(FindObjectsSortMode.None);
             var displaySO = Resources.Load<BuildableItemSO>("Items/DisplayStand");
+            var coolerSO = Resources.Load<BuildableItemSO>("Items/CoolerStand");
+
             foreach (var ds in displayStands)
             {
-                var col = ds.GetComponent<Collider>();
-                if (col != null)
-                {
-                    var placed = ds.gameObject.AddComponent<PlacedFurniture>();
-                    var cells = GetCellsFromCollider(col);
-                    placed.Setup(displaySO, cells, 150f);
-                }
+                if (ds is CoolerStand) continue; // Handle cooler stands separately
+
+                SetupAndSnapStartingFurniture(ds.gameObject, displaySO, 150f);
             }
 
             var coolerStands = FindObjectsByType<CoolerStand>(FindObjectsSortMode.None);
-            var coolerSO = Resources.Load<BuildableItemSO>("Items/CoolerStand");
             foreach (var cs in coolerStands)
             {
-                var col = cs.GetComponent<Collider>();
-                if (col != null)
-                {
-                    var placed = cs.gameObject.AddComponent<PlacedFurniture>();
-                    var cells = GetCellsFromCollider(col);
-                    placed.Setup(coolerSO, cells, 600f);
-                }
+                SetupAndSnapStartingFurniture(cs.gameObject, coolerSO, 600f);
             }
 
             var tables = FindObjectsByType<CustomerTable>(FindObjectsSortMode.None);
@@ -220,15 +221,36 @@ namespace LemonEmpire.Core
                 Transform parentGroup = t.transform.parent;
                 if (parentGroup != null && parentGroup.name.StartsWith("CustomerTableGroup"))
                 {
-                    var col = parentGroup.GetComponentInChildren<Collider>();
-                    if (col != null && parentGroup.GetComponent<PlacedFurniture>() == null)
+                    if (parentGroup.GetComponent<PlacedFurniture>() == null)
                     {
-                        var placed = parentGroup.gameObject.AddComponent<PlacedFurniture>();
-                        var cells = GetCellsFromCollider(col);
-                        placed.Setup(tableSO, cells, 400f);
+                        SetupAndSnapStartingFurniture(parentGroup.gameObject, tableSO, 400f);
                     }
                 }
             }
+        }
+
+        private void SetupAndSnapStartingFurniture(GameObject obj, BuildableItemSO itemSO, float cost)
+        {
+            // Snap position to 0.5m grid
+            Vector2Int gridCell = _grid.WorldToGrid(obj.transform.position);
+            Vector3 snappedPos = _grid.GridToWorld(gridCell);
+            snappedPos.y = obj.transform.position.y; // Keep original height
+            obj.transform.position = snappedPos;
+
+            // Snap rotation to 90 deg steps
+            float rotY = Mathf.Round(obj.transform.eulerAngles.y / 90f) * 90f;
+            obj.transform.rotation = Quaternion.Euler(0f, rotY, 0f);
+
+            int rotAngle = Mathf.RoundToInt(rotY) % 360;
+            if (rotAngle < 0) rotAngle += 360;
+
+            // Calculate occupied cells exactly based on SO size
+            List<Vector2Int> cells = GetOccupiedCells(gridCell, itemSO.sizeInCells, rotAngle);
+
+            var placed = obj.AddComponent<PlacedFurniture>();
+            placed.Setup(itemSO, cells, cost);
+
+            _grid.OccupyCells(cells);
         }
 
         private List<Vector2Int> GetCellsFromCollider(Collider col)
