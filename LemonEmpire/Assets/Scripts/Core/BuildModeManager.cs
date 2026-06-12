@@ -810,6 +810,21 @@ namespace LemonEmpire.Core
             closeBtn.style.SetBorderWidth(0f);
             closeBtn.style.fontSize = 14f;
             closeBtn.style.unityFontStyleAndWeight = FontStyle.Bold;
+            closeBtn.style.transitionProperty = new List<StylePropertyName> { 
+                new StylePropertyName("color"), 
+                new StylePropertyName("scale") 
+            };
+            closeBtn.style.transitionDuration = new List<TimeValue> { 
+                new TimeValue(0.12f, TimeUnit.Second) 
+            };
+            closeBtn.RegisterCallback<MouseEnterEvent>(evt => {
+                closeBtn.style.color = new StyleColor(new Color(0.95f, 0.35f, 0.35f, 1f));
+                closeBtn.style.scale = new StyleScale(new Scale(new Vector3(1.15f, 1.15f, 1f)));
+            });
+            closeBtn.RegisterCallback<MouseLeaveEvent>(evt => {
+                closeBtn.style.color = new StyleColor(new Color(0.6f, 0.6f, 0.6f, 1f));
+                closeBtn.style.scale = new StyleScale(new Scale(Vector3.one));
+            });
             closeBtn.clicked += ToggleBuildMode;
             headerRow.Add(closeBtn);
 
@@ -824,6 +839,8 @@ namespace LemonEmpire.Core
             // Scroll View for items
             var scrollView = new ScrollView(ScrollViewMode.Horizontal);
             scrollView.style.flexGrow = 1f;
+            scrollView.style.paddingLeft = 8f;
+            scrollView.style.paddingRight = 8f;
             scrollView.horizontalScrollerVisibility = ScrollerVisibility.Auto;
             scrollView.verticalScrollerVisibility = ScrollerVisibility.Hidden;
             _catalogPanel.Add(scrollView);
@@ -832,9 +849,9 @@ namespace LemonEmpire.Core
             var scroller = scrollView.horizontalScroller;
             if (scroller != null)
             {
-                scroller.style.height = 12f;
-                scroller.style.marginTop = 10f;
-                scroller.style.marginBottom = 2f;
+                scroller.style.height = 6f;
+                scroller.style.marginTop = 12f;
+                scroller.style.marginBottom = 4f;
                 scroller.style.backgroundColor = Color.clear;
 
                 var lowBtn = scroller.Q("unity-low-button");
@@ -843,16 +860,33 @@ namespace LemonEmpire.Core
                 var highBtn = scroller.Q("unity-high-button");
                 if (highBtn != null) highBtn.style.display = DisplayStyle.None;
 
+                // Reset slider container style
+                var slider = scroller.Q("unity-slider");
+                if (slider != null)
+                {
+                    slider.style.height = 6f;
+                    slider.style.marginTop = 0f;
+                    slider.style.marginBottom = 0f;
+                    slider.style.top = 0f;
+                    slider.style.bottom = 0f;
+                }
+
+                // Reset track style
                 var tracker = scroller.Q("unity-tracker");
                 if (tracker != null)
                 {
                     tracker.style.backgroundColor = new StyleColor(new Color(0.12f, 0.12f, 0.14f, 0.6f));
                     tracker.style.SetBorderColor(Color.clear);
                     tracker.style.SetBorderWidth(0f);
-                    tracker.style.SetBorderRadius(2f);
-                    tracker.style.height = 4f;
+                    tracker.style.SetBorderRadius(3f);
+                    tracker.style.height = 6f;
+                    tracker.style.marginTop = 0f;
+                    tracker.style.marginBottom = 0f;
+                    tracker.style.top = 0f;
+                    tracker.style.bottom = 0f;
                 }
 
+                // Reset drag handle style
                 var dragger = scroller.Q("unity-dragger");
                 if (dragger != null)
                 {
@@ -861,7 +895,11 @@ namespace LemonEmpire.Core
                     dragger.style.SetBorderWidth(0f);
                     dragger.style.SetBorderRadius(3f);
                     dragger.style.height = 6f;
-                    dragger.style.maxWidth = 100f; // Prevent the scroll handle from stretching too wide
+                    dragger.style.marginTop = 0f;
+                    dragger.style.marginBottom = 0f;
+                    dragger.style.top = 0f;
+                    dragger.style.bottom = 0f;
+                    dragger.style.maxWidth = 100f;
 
                     dragger.RegisterCallback<MouseEnterEvent>(evt => {
                         dragger.style.backgroundColor = new StyleColor(new Color(0.91f, 0.64f, 0.26f, 0.9f));
@@ -875,6 +913,7 @@ namespace LemonEmpire.Core
             _itemContainer = new VisualElement();
             _itemContainer.style.flexDirection = FlexDirection.Row;
             _itemContainer.style.alignItems = Align.Center;
+            _itemContainer.style.marginBottom = 6f;
             scrollView.Add(_itemContainer);
 
             // Instructions Panel (Top)
@@ -938,11 +977,11 @@ namespace LemonEmpire.Core
             {
                 var card = new VisualElement();
                 card.style.width = 175f;
-                card.style.height = 132f;
-                card.style.backgroundColor = new StyleColor(new Color(0.12f, 0.12f, 0.14f, 0.95f));
+                card.style.height = 136f;
+                card.style.backgroundColor = new StyleColor(new Color(0.09f, 0.09f, 0.11f, 0.98f));
                 card.style.SetBorderRadius(14f);
                 card.style.SetBorderWidth(1.5f);
-                card.style.SetBorderColor(new Color(0.25f, 0.25f, 0.28f, 1f));
+                card.style.SetBorderColor(new Color(0.22f, 0.22f, 0.25f, 1f));
                 card.style.paddingLeft = 10f;
                 card.style.paddingRight = 10f;
                 card.style.paddingTop = 8f;
@@ -964,12 +1003,12 @@ namespace LemonEmpire.Core
                 card.RegisterCallback<MouseEnterEvent>(evt => {
                     card.style.scale = new StyleScale(new Scale(new Vector3(1.03f, 1.03f, 1f)));
                     card.style.SetBorderColor(new Color(0.91f, 0.64f, 0.26f, 1f)); // Glowing gold
-                    card.style.backgroundColor = new StyleColor(new Color(0.16f, 0.16f, 0.19f, 0.98f));
+                    card.style.backgroundColor = new StyleColor(new Color(0.14f, 0.14f, 0.17f, 0.98f));
                 });
                 card.RegisterCallback<MouseLeaveEvent>(evt => {
                     card.style.scale = new StyleScale(new Scale(Vector3.one));
-                    card.style.SetBorderColor(new Color(0.25f, 0.25f, 0.28f, 1f));
-                    card.style.backgroundColor = new StyleColor(new Color(0.12f, 0.12f, 0.14f, 0.95f));
+                    card.style.SetBorderColor(new Color(0.22f, 0.22f, 0.25f, 1f));
+                    card.style.backgroundColor = new StyleColor(new Color(0.09f, 0.09f, 0.11f, 0.98f));
                 });
 
                 _itemContainer.Add(card);
@@ -1001,25 +1040,31 @@ namespace LemonEmpire.Core
                 sizeLbl.style.unityFontStyleAndWeight = FontStyle.Bold;
                 headerRow.Add(sizeLbl);
 
+                // Middle Group (Name + Specs) for consistent vertical alignment
+                var midGroup = new VisualElement();
+                midGroup.style.flexGrow = 1f;
+                midGroup.style.justifyContent = Justify.Center;
+                midGroup.style.marginTop = 4f;
+                midGroup.style.marginBottom = 4f;
+                card.Add(midGroup);
+
                 // Item Name
                 var nameLbl = new Label(item.itemName);
-                nameLbl.style.fontSize = 12f;
+                nameLbl.style.fontSize = 11.5f;
                 nameLbl.style.color = new StyleColor(Color.white);
                 nameLbl.style.unityFontStyleAndWeight = FontStyle.Bold;
                 nameLbl.style.unityTextAlign = TextAnchor.MiddleLeft;
                 nameLbl.style.whiteSpace = WhiteSpace.Normal;
-                nameLbl.style.marginTop = 4f;
                 nameLbl.style.marginBottom = 2f;
-                card.Add(nameLbl);
+                midGroup.Add(nameLbl);
 
                 // Specifications
                 string specText = GetItemSpecificationText(item);
                 var specLbl = new Label(specText);
-                specLbl.style.fontSize = 9.5f;
+                specLbl.style.fontSize = 9f;
                 specLbl.style.color = new StyleColor(new Color(0.75f, 0.75f, 0.78f, 1f));
                 specLbl.style.unityTextAlign = TextAnchor.MiddleLeft;
-                specLbl.style.marginBottom = 6f;
-                card.Add(specLbl);
+                midGroup.Add(specLbl);
 
                 // Unlock & Place checks
                 bool isUnlocked = IsItemUpgradePurchased(item);
@@ -1032,6 +1077,16 @@ namespace LemonEmpire.Core
                 buyBtn.style.SetBorderWidth(1.5f);
                 buyBtn.style.unityFontStyleAndWeight = FontStyle.Bold;
                 buyBtn.style.fontSize = 11f;
+
+                // Button transitions
+                buyBtn.style.transitionProperty = new List<StylePropertyName> { 
+                    new StylePropertyName("background-color"), 
+                    new StylePropertyName("border-color"),
+                    new StylePropertyName("scale")
+                };
+                buyBtn.style.transitionDuration = new List<TimeValue> { 
+                    new TimeValue(0.12f, TimeUnit.Second) 
+                };
 
                 if (!isUnlocked)
                 {
@@ -1073,6 +1128,33 @@ namespace LemonEmpire.Core
                     if (canAfford)
                     {
                         buyBtn.clicked += () => StartPlacement(item);
+
+                        buyBtn.RegisterCallback<MouseEnterEvent>(evt => {
+                            buyBtn.style.scale = new StyleScale(new Scale(new Vector3(1.03f, 1.03f, 1f)));
+                            if (isFree)
+                            {
+                                buyBtn.style.backgroundColor = new StyleColor(new Color(0.16f, 0.30f, 0.20f, 0.98f));
+                                buyBtn.style.SetBorderColor(new Color(0.2f, 0.85f, 0.4f, 0.9f));
+                            }
+                            else
+                            {
+                                buyBtn.style.backgroundColor = new StyleColor(new Color(0.96f, 0.72f, 0.34f, 1f));
+                                buyBtn.style.SetBorderColor(new Color(0.91f, 0.64f, 0.26f, 0.9f));
+                            }
+                        });
+                        buyBtn.RegisterCallback<MouseLeaveEvent>(evt => {
+                            buyBtn.style.scale = new StyleScale(new Scale(Vector3.one));
+                            if (isFree)
+                            {
+                                buyBtn.style.backgroundColor = new StyleColor(new Color(0.12f, 0.22f, 0.15f, 0.9f));
+                                buyBtn.style.SetBorderColor(new Color(0.2f, 0.85f, 0.4f, 0.6f));
+                            }
+                            else
+                            {
+                                buyBtn.style.backgroundColor = new StyleColor(new Color(0.91f, 0.64f, 0.26f, 0.95f));
+                                buyBtn.style.SetBorderColor(new Color(0.91f, 0.64f, 0.26f, 0.5f));
+                            }
+                        });
                     }
                     else
                     {
