@@ -376,7 +376,17 @@ namespace LemonEmpire.Core
             if (item == null) return;
             
             _selectedItem = item;
-            _currentPlacementCost = item.cost;
+            
+            // If it is unique and require upgrade, the cost is already paid in tablet
+            if (item.isUnique && (item.itemName == "Музыкальный Автомат" || item.itemName == "Торговый Автомат"))
+            {
+                _currentPlacementCost = 0f;
+            }
+            else
+            {
+                _currentPlacementCost = item.cost;
+            }
+            
             _rotationAngle = 0;
 
             CreatePreview(item);
@@ -696,7 +706,16 @@ namespace LemonEmpire.Core
 
         private void SellFurniture(PlacedFurniture furniture)
         {
-            float refund = furniture.purchaseCost * 0.7f;
+            float refund = 0f;
+            if (furniture.itemSO.isUnique && (furniture.itemSO.itemName == "Музыкальный Автомат" || furniture.itemSO.itemName == "Торговый Автомат"))
+            {
+                refund = furniture.itemSO.cost * 0.7f;
+            }
+            else
+            {
+                refund = furniture.purchaseCost * 0.7f;
+            }
+
             if (EconomyManager.Instance != null)
             {
                 EconomyManager.Instance.Earn(refund);
@@ -731,15 +750,6 @@ namespace LemonEmpire.Core
             return cells;
         }
 
-        private bool IsItemAlreadyBuilt(BuildableItemSO item)
-        {
-            if (item.itemName == "Музыкальный Автомат")
-                return UpgradeManager.HasJukebox;
-            if (item.itemName == "Торговый Автомат")
-                return UpgradeManager.HasSnackVending;
-            return false;
-        }
-
         private void SetUniqueItemState(BuildableItemSO item, bool state)
         {
             if (item.itemName == "Музыкальный Автомат")
@@ -747,6 +757,8 @@ namespace LemonEmpire.Core
             else if (item.itemName == "Торговый Автомат")
                 UpgradeManager.HasSnackVending = state;
         }
+
+        // ── UI Building ──
 
         // ── UI Building ──
 
@@ -760,71 +772,66 @@ namespace LemonEmpire.Core
 
             _catalogPanel = new VisualElement();
             _catalogPanel.style.position = Position.Absolute;
-            _catalogPanel.style.bottom = 40f;
+            _catalogPanel.style.bottom = 30f;
             _catalogPanel.style.alignSelf = Align.Center;
-            _catalogPanel.style.width = 800f;
-            _catalogPanel.style.height = 180f;
-            _catalogPanel.style.backgroundColor = new StyleColor(new Color(0.08f, 0.08f, 0.09f, 0.94f));
-            _catalogPanel.style.SetBorderRadius(20f);
-            _catalogPanel.style.SetBorderWidth(2f);
-            _catalogPanel.style.SetBorderColor(new Color(0.91f, 0.64f, 0.26f, 1f)); // Gold border
-            _catalogPanel.style.paddingLeft = 20f;
-            _catalogPanel.style.paddingRight = 20f;
-            _catalogPanel.style.paddingTop = 12f;
-            _catalogPanel.style.paddingBottom = 12f;
+            _catalogPanel.style.width = 880f;
+            _catalogPanel.style.height = 230f;
+            _catalogPanel.style.backgroundColor = new StyleColor(new Color(0.06f, 0.06f, 0.07f, 0.95f));
+            _catalogPanel.style.SetBorderRadius(24f);
+            _catalogPanel.style.SetBorderWidth(1.5f);
+            _catalogPanel.style.SetBorderColor(new Color(0.91f, 0.64f, 0.26f, 0.85f)); // Gold border
+            _catalogPanel.style.paddingLeft = 24f;
+            _catalogPanel.style.paddingRight = 24f;
+            _catalogPanel.style.paddingTop = 16f;
+            _catalogPanel.style.paddingBottom = 16f;
             _catalogPanel.style.display = DisplayStyle.None;
             root.Add(_catalogPanel);
 
-            // Categories Row
-            var categoriesRow = new VisualElement();
-            categoriesRow.style.flexDirection = FlexDirection.Row;
-            categoriesRow.style.justifyContent = Justify.Center;
-            categoriesRow.style.marginBottom = 10f;
-            _catalogPanel.Add(categoriesRow);
+            // Header Row
+            var headerRow = new VisualElement();
+            headerRow.style.flexDirection = FlexDirection.Row;
+            headerRow.style.justifyContent = Justify.SpaceBetween;
+            headerRow.style.alignItems = Align.Center;
+            _catalogPanel.Add(headerRow);
 
-            string[] catNames = new string[] { "Стеллажи", "Охлаждение", "Декор", "Столы" };
-            BuildCategory[] cats = new BuildCategory[] { BuildCategory.Shelves, BuildCategory.Cooling, BuildCategory.Decor, BuildCategory.Tables };
-
-            _itemContainer = new VisualElement();
-            _itemContainer.style.flexDirection = FlexDirection.Row;
-            _itemContainer.style.flexGrow = 1f;
-            _itemContainer.style.justifyContent = Justify.SpaceEvenly;
-            _catalogPanel.Add(_itemContainer);
-
-            for (int i = 0; i < catNames.Length; i++)
-            {
-                var cat = cats[i];
-                var btn = new Button();
-                btn.text = catNames[i];
-                btn.style.height = 30f;
-                btn.style.paddingLeft = 14f;
-                btn.style.paddingRight = 14f;
-                btn.style.marginRight = 6f;
-                btn.style.backgroundColor = new StyleColor(new Color(0.16f, 0.16f, 0.18f, 1f));
-                btn.style.color = new StyleColor(Color.white);
-                btn.style.SetBorderRadius(6f);
-                btn.style.SetBorderWidth(0f);
-                btn.style.unityFontStyleAndWeight = FontStyle.Bold;
-
-                btn.clicked += () => ShowCategory(cat);
-                categoriesRow.Add(btn);
-            }
+            var titleLbl = new Label("КАТАЛОГ СТРОИТЕЛЬСТВА & ОБОРУДОВАНИЯ");
+            titleLbl.style.color = new StyleColor(new Color(0.91f, 0.64f, 0.26f, 1f));
+            titleLbl.style.fontSize = 14f;
+            titleLbl.style.unityFontStyleAndWeight = FontStyle.Bold;
+            headerRow.Add(titleLbl);
 
             // Close Button
             var closeBtn = new Button();
             closeBtn.text = "✖";
-            closeBtn.style.position = Position.Absolute;
-            closeBtn.style.right = 16f;
-            closeBtn.style.top = 12f;
-            closeBtn.style.width = 28f;
-            closeBtn.style.height = 28f;
+            closeBtn.style.width = 24f;
+            closeBtn.style.height = 24f;
             closeBtn.style.backgroundColor = new StyleColor(Color.clear);
             closeBtn.style.color = new StyleColor(new Color(0.6f, 0.6f, 0.6f, 1f));
             closeBtn.style.SetBorderWidth(0f);
-            closeBtn.style.fontSize = 16f;
+            closeBtn.style.fontSize = 14f;
             closeBtn.style.unityFontStyleAndWeight = FontStyle.Bold;
             closeBtn.clicked += ToggleBuildMode;
-            _catalogPanel.Add(closeBtn);
+            headerRow.Add(closeBtn);
+
+            // Divider line
+            var divider = new VisualElement();
+            divider.style.height = 1f;
+            divider.style.backgroundColor = new StyleColor(new Color(0.91f, 0.64f, 0.26f, 0.25f));
+            divider.style.marginTop = 6f;
+            divider.style.marginBottom = 12f;
+            _catalogPanel.Add(divider);
+
+            // Scroll View for items
+            var scrollView = new ScrollView(ScrollViewMode.Horizontal);
+            scrollView.style.flexGrow = 1f;
+            scrollView.horizontalScrollerVisibility = ScrollerVisibility.Auto;
+            scrollView.verticalScrollerVisibility = ScrollerVisibility.Hidden;
+            _catalogPanel.Add(scrollView);
+
+            _itemContainer = new VisualElement();
+            _itemContainer.style.flexDirection = FlexDirection.Row;
+            _itemContainer.style.alignItems = Align.Center;
+            scrollView.Add(_itemContainer);
 
             // Instructions Panel (Top)
             _topInstructionsPanel = new VisualElement();
@@ -852,7 +859,7 @@ namespace LemonEmpire.Core
             // Error Label (premium dark pill with red text)
             _errorLabel = new Label();
             _errorLabel.style.position = Position.Absolute;
-            _errorLabel.style.bottom = 230f;
+            _errorLabel.style.bottom = 280f; // Adjusted for taller panel
             _errorLabel.style.alignSelf = Align.Center;
             _errorLabel.style.backgroundColor = new StyleColor(new Color(0.08f, 0.08f, 0.09f, 0.90f));
             _errorLabel.style.color = new StyleColor(new Color(0.95f, 0.26f, 0.26f, 1f));
@@ -872,65 +879,238 @@ namespace LemonEmpire.Core
 
         private void ShowCategory(BuildCategory cat)
         {
+            PopulateCatalog();
+        }
+
+        private void PopulateCatalog()
+        {
             if (_itemContainer == null) return;
             _itemContainer.Clear();
+
             var items = Resources.LoadAll<BuildableItemSO>("Items");
+            System.Array.Sort(items, (a, b) => a.itemName.CompareTo(b.itemName));
 
             foreach (var item in items)
             {
-                if (item.category != cat) continue;
-
                 var card = new VisualElement();
-                card.style.width = 110f;
-                card.style.height = 100f;
-                card.style.backgroundColor = new StyleColor(new Color(0.14f, 0.14f, 0.16f, 1f));
-                card.style.SetBorderRadius(12f);
-                card.style.paddingLeft = 8f;
-                card.style.paddingRight = 8f;
+                card.style.width = 175f;
+                card.style.height = 132f;
+                card.style.backgroundColor = new StyleColor(new Color(0.12f, 0.12f, 0.14f, 0.95f));
+                card.style.SetBorderRadius(14f);
+                card.style.SetBorderWidth(1.5f);
+                card.style.SetBorderColor(new Color(0.25f, 0.25f, 0.28f, 1f));
+                card.style.paddingLeft = 10f;
+                card.style.paddingRight = 10f;
                 card.style.paddingTop = 8f;
                 card.style.paddingBottom = 8f;
-                card.style.alignItems = Align.Center;
+                card.style.marginRight = 12f;
+                card.style.alignItems = Align.Stretch;
                 card.style.justifyContent = Justify.SpaceBetween;
+
+                // Micro-animations for hover
+                card.style.transitionProperty = new List<StylePropertyName> { 
+                    new StylePropertyName("transform"), 
+                    new StylePropertyName("border-color"),
+                    new StylePropertyName("background-color")
+                };
+                card.style.transitionDuration = new List<TimeValue> { 
+                    new TimeValue(0.12f, TimeUnit.Second) 
+                };
+
+                card.RegisterCallback<MouseEnterEvent>(evt => {
+                    card.style.transform = new StyleTransform(new Scale(new Vector3(1.03f, 1.03f, 1f)));
+                    card.style.SetBorderColor(new Color(0.91f, 0.64f, 0.26f, 1f)); // Glowing gold
+                    card.style.backgroundColor = new StyleColor(new Color(0.16f, 0.16f, 0.19f, 0.98f));
+                });
+                card.RegisterCallback<MouseLeaveEvent>(evt => {
+                    card.style.transform = new StyleTransform(new Scale(new Vector3(1f, 1f, 1f)));
+                    card.style.SetBorderColor(new Color(0.25f, 0.25f, 0.28f, 1f));
+                    card.style.backgroundColor = new StyleColor(new Color(0.12f, 0.12f, 0.14f, 0.95f));
+                });
+
                 _itemContainer.Add(card);
 
+                // Category & Size Row
+                var headerRow = new VisualElement();
+                headerRow.style.flexDirection = FlexDirection.Row;
+                headerRow.style.justifyContent = Justify.SpaceBetween;
+                headerRow.style.alignItems = Align.Center;
+                card.Add(headerRow);
+
+                // Category Badge
+                var badge = new Label(GetCategoryText(item.category));
+                badge.style.fontSize = 9f;
+                badge.style.unityFontStyleAndWeight = FontStyle.Bold;
+                badge.style.paddingLeft = 6f;
+                badge.style.paddingRight = 6f;
+                badge.style.paddingTop = 2f;
+                badge.style.paddingBottom = 2f;
+                badge.style.SetBorderRadius(4f);
+                SetBadgeStyle(badge, item.category);
+                headerRow.Add(badge);
+
+                // Size info
+                var sizeLbl = new Label($"{item.sizeInCells.x}x{item.sizeInCells.y}");
+                sizeLbl.style.fontSize = 10f;
+                sizeLbl.style.color = new StyleColor(new Color(0.6f, 0.6f, 0.6f, 1f));
+                sizeLbl.style.unityFontStyleAndWeight = FontStyle.Bold;
+                headerRow.Add(sizeLbl);
+
+                // Item Name
                 var nameLbl = new Label(item.itemName);
-                nameLbl.style.fontSize = 11f;
+                nameLbl.style.fontSize = 12f;
                 nameLbl.style.color = new StyleColor(Color.white);
                 nameLbl.style.unityFontStyleAndWeight = FontStyle.Bold;
-                nameLbl.style.unityTextAlign = TextAnchor.MiddleCenter;
+                nameLbl.style.unityTextAlign = TextAnchor.MiddleLeft;
                 nameLbl.style.whiteSpace = WhiteSpace.Normal;
+                nameLbl.style.marginTop = 4f;
+                nameLbl.style.marginBottom = 2f;
                 card.Add(nameLbl);
 
-                // Uniqueness Limits Check
-                bool isBuilt = item.isUnique && IsItemAlreadyBuilt(item);
-                string limitText = item.isUnique ? (isBuilt ? "1/1" : "0/1") : "";
+                // Specifications
+                string specText = GetItemSpecificationText(item);
+                var specLbl = new Label(specText);
+                specLbl.style.fontSize = 9.5f;
+                specLbl.style.color = new StyleColor(new Color(0.75f, 0.75f, 0.78f, 1f));
+                specLbl.style.unityTextAlign = TextAnchor.MiddleLeft;
+                specLbl.style.marginBottom = 6f;
+                card.Add(specLbl);
 
-                var limitLbl = new Label(limitText);
-                limitLbl.style.fontSize = 10f;
-                limitLbl.style.color = new StyleColor(isBuilt ? new Color(0.95f, 0.38f, 0.35f) : new Color(0.11f, 0.82f, 0.60f));
-                limitLbl.style.unityFontStyleAndWeight = FontStyle.Bold;
-                card.Add(limitLbl);
+                // Unlock & Place checks
+                bool isUnlocked = IsItemUpgradePurchased(item);
+                bool isPlaced = item.isUnique && IsItemAlreadyBuilt(item);
 
                 var buyBtn = new Button();
-                buyBtn.text = $"${item.cost:F0}";
-                buyBtn.style.width = Length.Percent(95);
-                buyBtn.style.height = 26f;
-                buyBtn.style.backgroundColor = new StyleColor(isBuilt ? new Color(0.25f, 0.25f, 0.28f, 1f) : new Color(0.91f, 0.64f, 0.26f, 1f));
-                buyBtn.style.color = new StyleColor(isBuilt ? new Color(0.6f, 0.6f, 0.6f) : new Color(0.1f, 0.08f, 0.05f));
-                buyBtn.style.SetBorderRadius(6f);
-                buyBtn.style.SetBorderWidth(0f);
+                buyBtn.style.width = Length.Percent(100);
+                buyBtn.style.height = 28f;
+                buyBtn.style.SetBorderRadius(8f);
+                buyBtn.style.SetBorderWidth(1.5f);
                 buyBtn.style.unityFontStyleAndWeight = FontStyle.Bold;
+                buyBtn.style.fontSize = 11f;
 
-                if (isBuilt)
+                if (!isUnlocked)
                 {
+                    buyBtn.text = "🔒 Нужен планшет";
+                    buyBtn.style.backgroundColor = new StyleColor(new Color(0.18f, 0.12f, 0.12f, 0.8f));
+                    buyBtn.style.color = new StyleColor(new Color(0.95f, 0.35f, 0.35f, 1f));
+                    buyBtn.style.SetBorderColor(new Color(0.95f, 0.35f, 0.35f, 0.4f));
+                    buyBtn.enabledSelf = false;
+                }
+                else if (isPlaced)
+                {
+                    buyBtn.text = "✓ Установлено (1/1)";
+                    buyBtn.style.backgroundColor = new StyleColor(new Color(0.12f, 0.14f, 0.12f, 0.8f));
+                    buyBtn.style.color = new StyleColor(new Color(0.4f, 0.7f, 0.4f, 0.8f));
+                    buyBtn.style.SetBorderColor(new Color(0.4f, 0.7f, 0.4f, 0.4f));
                     buyBtn.enabledSelf = false;
                 }
                 else
                 {
-                    buyBtn.clicked += () => StartPlacement(item);
+                    bool isFree = item.isUnique && (item.itemName == "Музыкальный Автомат" || item.itemName == "Торговый Автомат");
+                    float price = isFree ? 0f : item.cost;
+                    bool canAfford = EconomyManager.Instance == null || EconomyManager.Instance.Balance >= price;
+
+                    if (isFree)
+                    {
+                        buyBtn.text = "Разместить (Бесплатно)";
+                        buyBtn.style.backgroundColor = new StyleColor(new Color(0.12f, 0.22f, 0.15f, 0.9f));
+                        buyBtn.style.color = new StyleColor(new Color(0.2f, 0.85f, 0.4f, 1f));
+                        buyBtn.style.SetBorderColor(new Color(0.2f, 0.85f, 0.4f, 0.6f));
+                    }
+                    else
+                    {
+                        buyBtn.text = $"Купить (${price:F0})";
+                        buyBtn.style.backgroundColor = new StyleColor(canAfford ? new Color(0.91f, 0.64f, 0.26f, 0.95f) : new Color(0.22f, 0.12f, 0.12f, 0.9f));
+                        buyBtn.style.color = new StyleColor(canAfford ? new Color(0.1f, 0.08f, 0.05f, 1f) : new Color(0.95f, 0.35f, 0.35f, 1f));
+                        buyBtn.style.SetBorderColor(canAfford ? new Color(0.91f, 0.64f, 0.26f, 0.5f) : new Color(0.95f, 0.35f, 0.35f, 0.5f));
+                    }
+
+                    if (canAfford)
+                    {
+                        buyBtn.clicked += () => StartPlacement(item);
+                    }
+                    else
+                    {
+                        buyBtn.enabledSelf = false;
+                        buyBtn.text = "Недостаточно средств";
+                    }
                 }
                 card.Add(buyBtn);
             }
+        }
+
+        public bool IsItemAlreadyBuilt(BuildableItemSO item)
+        {
+            var placedObjects = UnityEngine.Object.FindObjectsByType<PlacedFurniture>(FindObjectsSortMode.None);
+            foreach (var placed in placedObjects)
+            {
+                if (placed.itemSO != null && placed.itemSO.itemName == item.itemName)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public bool IsItemUpgradePurchased(BuildableItemSO item)
+        {
+            if (item.itemName == "Музыкальный Автомат")
+                return UpgradeManager.HasJukebox;
+            if (item.itemName == "Торговый Автомат")
+                return UpgradeManager.HasSnackVending;
+            if (item.itemName == "Двойной Холодильник")
+                return UpgradeManager.HasDoubleCooler;
+            if (item.itemName == "Премиум Стеллаж")
+                return UpgradeManager.HasPremiumShelves;
+            return true;
+        }
+
+        private string GetCategoryText(BuildCategory cat)
+        {
+            return cat switch
+            {
+                BuildCategory.Shelves => "СТЕЛЛАЖИ",
+                BuildCategory.Cooling => "ОХЛАЖДЕНИЕ",
+                BuildCategory.Decor => "ДЕКОР",
+                BuildCategory.Tables => "СТОЛЫ",
+                _ => "ДРУГОЕ"
+            };
+        }
+
+        private void SetBadgeStyle(Label badge, BuildCategory cat)
+        {
+            switch (cat)
+            {
+                case BuildCategory.Shelves:
+                    badge.style.backgroundColor = new StyleColor(new Color(0.12f, 0.18f, 0.28f, 1f));
+                    badge.style.color = new StyleColor(new Color(0.4f, 0.7f, 1.0f, 1f));
+                    break;
+                case BuildCategory.Cooling:
+                    badge.style.backgroundColor = new StyleColor(new Color(0.1f, 0.24f, 0.25f, 1f));
+                    badge.style.color = new StyleColor(new Color(0.3f, 0.9f, 0.95f, 1f));
+                    break;
+                case BuildCategory.Decor:
+                    badge.style.backgroundColor = new StyleColor(new Color(0.22f, 0.15f, 0.28f, 1f));
+                    badge.style.color = new StyleColor(new Color(0.8f, 0.5f, 0.95f, 1f));
+                    break;
+                case BuildCategory.Tables:
+                    badge.style.backgroundColor = new StyleColor(new Color(0.28f, 0.2f, 0.12f, 1f));
+                    badge.style.color = new StyleColor(new Color(1.0f, 0.7f, 0.3f, 1f));
+                    break;
+            }
+        }
+
+        private string GetItemSpecificationText(BuildableItemSO item)
+        {
+            return item.itemName switch
+            {
+                "Премиум Стеллаж" => "Вместимость: 36 бутылок",
+                "Двойной Холодильник" => "Хранение охлажденных напитков",
+                "Стол со Стульями" => "Место для отдыха клиентов",
+                "Музыкальный Автомат" => "Повышает настроение клиентов",
+                "Торговый Автомат" => "Пассивный доход от снеков",
+                _ => "Элемент интерьера магазина"
+            };
         }
     }
 }

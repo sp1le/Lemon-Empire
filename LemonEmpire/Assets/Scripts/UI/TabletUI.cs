@@ -1861,8 +1861,9 @@ namespace LemonEmpire.UI
                 _ => null
             };
 
+            bool isUniquePlaceable = managerName == "Музыкальный автомат (Jukebox)" || managerName == "Торговый автомат (Snacks)";
+
             var actionBtn = new Button();
-            actionBtn.text = purchased ? "✓ Куплено" : (itemPath != null ? "Разместить" : "Купить");
             actionBtn.style.width  = 130f;
             actionBtn.style.height = 48f;
             actionBtn.style.SetBorderRadius(12f);
@@ -1870,47 +1871,71 @@ namespace LemonEmpire.UI
             actionBtn.style.unityFontStyleAndWeight = FontStyle.Bold;
             actionBtn.style.SetBorderWidth(0f);
 
-            if (purchased)
-            {
-                actionBtn.style.backgroundColor = new StyleColor(new Color(0.85f, 0.82f, 0.77f, 1f));
-                actionBtn.style.color           = new StyleColor(ColorTextMuted);
-                actionBtn.enabledSelf = false;
-            }
-            else
+            if (!purchased)
             {
                 float balance  = EconomyManager.Instance != null ? EconomyManager.Instance.Balance : 0f;
                 bool canAfford = balance >= cost;
+                actionBtn.text = "Купить";
                 actionBtn.style.backgroundColor = new StyleColor(canAfford ? ColorGreen : new Color(0.75f, 0.2f, 0.2f));
                 actionBtn.style.color           = new StyleColor(Color.white);
+                actionBtn.enabledSelf = true;
 
-                if (itemPath != null)
+                string capManagerName = managerName;
+                int    capCost = cost;
+                actionBtn.clicked += () =>
                 {
-                    actionBtn.clicked += () =>
+                    if (UpgradeManager.TryPurchaseUpgrade(capManagerName, capCost))
+                        RefreshTab(3); // Rebuild upgrades tab to reflect purchase
+                };
+            }
+            else
+            {
+                if (isUniquePlaceable && itemPath != null)
+                {
+                    bool isPlaced = false;
+                    var item = Resources.Load<BuildableItemSO>(itemPath);
+                    if (item != null && BuildModeManager.Instance != null)
                     {
-                        Close();
-                        if (BuildModeManager.Instance != null)
+                        isPlaced = BuildModeManager.Instance.IsItemAlreadyBuilt(item);
+                    }
+
+                    if (isPlaced)
+                    {
+                        actionBtn.text = "✓ Установлено";
+                        actionBtn.style.backgroundColor = new StyleColor(new Color(0.85f, 0.82f, 0.77f, 1f));
+                        actionBtn.style.color           = new StyleColor(ColorTextMuted);
+                        actionBtn.enabledSelf = false;
+                    }
+                    else
+                    {
+                        actionBtn.text = "Разместить";
+                        actionBtn.style.backgroundColor = new StyleColor(ColorGreen);
+                        actionBtn.style.color           = new StyleColor(Color.white);
+                        actionBtn.enabledSelf = true;
+
+                        actionBtn.clicked += () =>
                         {
-                            if (!BuildModeManager.Instance.IsBuildModeActive)
+                            Close();
+                            if (BuildModeManager.Instance != null)
                             {
-                                BuildModeManager.Instance.ToggleBuildMode();
+                                if (!BuildModeManager.Instance.IsBuildModeActive)
+                                {
+                                    BuildModeManager.Instance.ToggleBuildMode();
+                                }
+                                if (item != null)
+                                {
+                                    BuildModeManager.Instance.StartPlacement(item);
+                                }
                             }
-                            var item = Resources.Load<BuildableItemSO>(itemPath);
-                            if (item != null)
-                            {
-                                BuildModeManager.Instance.StartPlacement(item);
-                            }
-                        }
-                    };
+                        };
+                    }
                 }
                 else
                 {
-                    string capManagerName = managerName;
-                    int    capCost = cost;
-                    actionBtn.clicked += () =>
-                    {
-                        if (UpgradeManager.TryPurchaseUpgrade(capManagerName, capCost))
-                            RefreshTab(3); // Rebuild upgrades tab to reflect purchase
-                    };
+                    actionBtn.text = "✓ Куплено";
+                    actionBtn.style.backgroundColor = new StyleColor(new Color(0.85f, 0.82f, 0.77f, 1f));
+                    actionBtn.style.color           = new StyleColor(ColorTextMuted);
+                    actionBtn.enabledSelf = false;
                 }
             }
 
