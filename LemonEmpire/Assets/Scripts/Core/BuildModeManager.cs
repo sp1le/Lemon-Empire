@@ -909,7 +909,7 @@ namespace LemonEmpire.Core
 
                 // Micro-animations for hover
                 card.style.transitionProperty = new List<StylePropertyName> { 
-                    new StylePropertyName("transform"), 
+                    new StylePropertyName("scale"), 
                     new StylePropertyName("border-color"),
                     new StylePropertyName("background-color")
                 };
@@ -918,12 +918,12 @@ namespace LemonEmpire.Core
                 };
 
                 card.RegisterCallback<MouseEnterEvent>(evt => {
-                    card.style.transform = new StyleTransform(new Scale(new Vector3(1.03f, 1.03f, 1f)));
+                    card.style.scale = new StyleScale(new Scale(new Vector3(1.03f, 1.03f, 1f)));
                     card.style.SetBorderColor(new Color(0.91f, 0.64f, 0.26f, 1f)); // Glowing gold
                     card.style.backgroundColor = new StyleColor(new Color(0.16f, 0.16f, 0.19f, 0.98f));
                 });
                 card.RegisterCallback<MouseLeaveEvent>(evt => {
-                    card.style.transform = new StyleTransform(new Scale(new Vector3(1f, 1f, 1f)));
+                    card.style.scale = new StyleScale(new Scale(Vector3.one));
                     card.style.SetBorderColor(new Color(0.25f, 0.25f, 0.28f, 1f));
                     card.style.backgroundColor = new StyleColor(new Color(0.12f, 0.12f, 0.14f, 0.95f));
                 });
