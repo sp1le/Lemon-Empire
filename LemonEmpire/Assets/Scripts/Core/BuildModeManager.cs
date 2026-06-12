@@ -1090,7 +1090,7 @@ namespace LemonEmpire.Core
 
                 if (!isUnlocked)
                 {
-                    buyBtn.text = "🔒 Нужен планшет";
+                    buyBtn.text = "🔒 Требуется улучшение";
                     buyBtn.style.backgroundColor = new StyleColor(new Color(0.18f, 0.12f, 0.12f, 0.8f));
                     buyBtn.style.color = new StyleColor(new Color(0.95f, 0.35f, 0.35f, 1f));
                     buyBtn.style.SetBorderColor(new Color(0.95f, 0.35f, 0.35f, 0.4f));
