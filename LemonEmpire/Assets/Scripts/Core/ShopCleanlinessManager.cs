@@ -1,5 +1,6 @@
 using UnityEngine;
 using LemonEmpire.Production;
+using LemonEmpire.Trading;
 
 namespace LemonEmpire.Core
 {
@@ -125,23 +126,83 @@ namespace LemonEmpire.Core
             }
 
             Vector3 spawnPos = Vector3.zero;
+            bool foundPos = false;
+
             if (targetEntrance != null)
             {
                 Vector2 circleOffset = Random.insideUnitCircle * 1.5f;
                 spawnPos = targetEntrance.position + new Vector3(circleOffset.x, 0f, circleOffset.y);
+                foundPos = true;
             }
             else
             {
-                // Fallback near spawner/trade stand or player
-                var stand = FindFirstObjectByType<LemonEmpire.Trading.TradeStand>();
-                if (stand != null)
+                // Try to find active customer (NPCBuyer)
+                var buyers = FindObjectsByType<NPCBuyer>(FindObjectsSortMode.None);
+                if (buyers.Length > 0)
                 {
-                    Vector2 circleOffset = Random.insideUnitCircle * 3f;
-                    spawnPos = stand.transform.position + new Vector3(circleOffset.x, 0f, circleOffset.y);
+                    var randomBuyer = buyers[Random.Range(0, buyers.Length)];
+                    Vector2 circleOffset = Random.insideUnitCircle * 1.0f;
+                    Vector3 testPos = randomBuyer.transform.position + new Vector3(circleOffset.x, 0f, circleOffset.y);
+                    
+                    UnityEngine.AI.NavMeshHit hit;
+                    if (UnityEngine.AI.NavMesh.SamplePosition(testPos, out hit, 2.0f, UnityEngine.AI.NavMesh.AllAreas))
+                    {
+                        spawnPos = hit.position;
+                        foundPos = true;
+                    }
+                }
+
+                // Try near ServiceCounter
+                if (!foundPos)
+                {
+                    var counter = FindFirstObjectByType<ServiceCounter>();
+                    if (counter != null)
+                    {
+                        Vector2 circleOffset = Random.insideUnitCircle * 4.0f;
+                        Vector3 testPos = counter.transform.position + new Vector3(circleOffset.x, 0f, circleOffset.y);
+                        
+                        UnityEngine.AI.NavMeshHit hit;
+                        if (UnityEngine.AI.NavMesh.SamplePosition(testPos, out hit, 3.0f, UnityEngine.AI.NavMesh.AllAreas))
+                        {
+                            spawnPos = hit.position;
+                            foundPos = true;
+                        }
+                    }
+                }
+
+                // Try random position inside the main shop floor (walkable)
+                if (!foundPos)
+                {
+                    Vector3 randomPt = new Vector3(Random.Range(-9f, 9f), -1.30f, Random.Range(-9f, 9f));
+                    UnityEngine.AI.NavMeshHit hit;
+                    if (UnityEngine.AI.NavMesh.SamplePosition(randomPt, out hit, 5.0f, UnityEngine.AI.NavMesh.AllAreas))
+                    {
+                        spawnPos = hit.position;
+                        foundPos = true;
+                    }
+                }
+
+                // Try near player
+                if (!foundPos)
+                {
+                    var player = FindFirstObjectByType<Player.PlayerController>();
+                    if (player != null)
+                    {
+                        Vector2 circleOffset = Random.insideUnitCircle * 3f;
+                        spawnPos = player.transform.position + new Vector3(circleOffset.x, 0f, circleOffset.y);
+                        foundPos = true;
+                    }
                 }
             }
 
-            spawnPos.y = -1.29f; // prevent z-fighting with the floor
+            if (!foundPos)
+            {
+                spawnPos = new Vector3(Random.Range(-5f, 5f), -1.29f, Random.Range(-5f, 5f));
+            }
+            else
+            {
+                spawnPos.y = -1.29f; // prevent z-fighting with the floor
+            }
 
             GameObject go;
             if (messSpotPrefab != null)

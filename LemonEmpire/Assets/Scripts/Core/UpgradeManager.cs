@@ -11,6 +11,7 @@ namespace LemonEmpire.Core
         public static bool HasTrashBin = false;
         public static bool HasDoubleCooler = false;
         public static bool HasPremiumShelves = false;
+        public static int WarehouseUpgradeLevel = 0;
 
         public static bool TryPurchaseUpgrade(string name, int cost)
         {
@@ -53,6 +54,18 @@ namespace LemonEmpire.Core
                 case "HasPremiumShelves":
                 case "PremiumShelves":
                     isPurchased = HasPremiumShelves;
+                    break;
+                case "Модернизация склада I":
+                case "WarehouseUpgrade1":
+                    isPurchased = WarehouseUpgradeLevel >= 1;
+                    break;
+                case "Модернизация склада II":
+                case "WarehouseUpgrade2":
+                    isPurchased = WarehouseUpgradeLevel >= 2;
+                    break;
+                case "Модернизация склада III":
+                case "WarehouseUpgrade3":
+                    isPurchased = WarehouseUpgradeLevel >= 3;
                     break;
                 default:
                     return false;
@@ -98,6 +111,18 @@ namespace LemonEmpire.Core
                     case "HasPremiumShelves":
                     case "PremiumShelves":
                         HasPremiumShelves = true;
+                        break;
+                    case "Модернизация склада I":
+                    case "WarehouseUpgrade1":
+                        WarehouseUpgradeLevel = 1;
+                        break;
+                    case "Модернизация склада II":
+                    case "WarehouseUpgrade2":
+                        WarehouseUpgradeLevel = 2;
+                        break;
+                    case "Модернизация склада III":
+                    case "WarehouseUpgrade3":
+                        WarehouseUpgradeLevel = 3;
                         break;
                 }
                 return true;

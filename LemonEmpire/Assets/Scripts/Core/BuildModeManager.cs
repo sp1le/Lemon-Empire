@@ -176,6 +176,7 @@ namespace LemonEmpire.Core
                     col.GetComponentInParent<CoolerStand>() != null ||
                     col.GetComponentInParent<CustomerTable>() != null ||
                     col.GetComponentInParent<LemonEmpire.Production.VendingMachine>() != null ||
+                    col.GetComponentInParent<WarehouseShelf>() != null ||
                     col.name.Contains("CustomerTableGroup") ||
                     (col.transform.parent != null && col.transform.parent.name.StartsWith("CustomerTableGroup")))
                 {
@@ -239,6 +240,13 @@ namespace LemonEmpire.Core
             foreach (var v in vendingMachines)
             {
                 SetupAndSnapStartingFurniture(v.gameObject, vendingSO, 150f);
+            }
+
+            var warehouseShelves = FindObjectsByType<WarehouseShelf>(FindObjectsSortMode.None);
+            var warehouseSO = Resources.Load<BuildableItemSO>("Items/WarehouseShelf");
+            foreach (var ws in warehouseShelves)
+            {
+                SetupAndSnapStartingFurniture(ws.gameObject, warehouseSO, 100f);
             }
         }
 
@@ -590,6 +598,7 @@ namespace LemonEmpire.Core
                     if (other.GetComponentInParent<DisplayStand>() != null ||
                         other.GetComponentInParent<CustomerTable>() != null ||
                         other.GetComponentInParent<LemonEmpire.Production.VendingMachine>() != null ||
+                        other.GetComponentInParent<WarehouseShelf>() != null ||
                         other.name.Contains("CustomerTableGroup") ||
                         (other.transform.parent != null && other.transform.parent.name.StartsWith("CustomerTableGroup")))
                     {
@@ -678,7 +687,22 @@ namespace LemonEmpire.Core
                 bool isInsufficientFunds = EconomyManager.Instance != null && EconomyManager.Instance.Balance < _currentPlacementCost;
                 bool isOverlappingWall = IsPreviewOverlappingWall();
 
-                bool isValid = !isOutside && !isLeftHallLocked && !isOccupied && !isUniqueLimitReached && !isInsufficientFunds && !isOverlappingWall;
+                bool isWarehouseItem = _selectedItem.itemName == "Складской стеллаж";
+                bool isPlacementValidForWarehouse = true;
+                if (isWarehouseItem)
+                {
+                    foreach (var cell in cellsToOccupy)
+                    {
+                        Vector3 wPos = _grid.GridToWorld(cell);
+                        if (wPos.z < 5.8f || wPos.x < -12.2f || wPos.x > 10.2f)
+                        {
+                            isPlacementValidForWarehouse = false;
+                            break;
+                        }
+                    }
+                }
+
+                bool isValid = !isOutside && !isLeftHallLocked && !isOccupied && !isUniqueLimitReached && !isInsufficientFunds && !isOverlappingWall && isPlacementValidForWarehouse;
 
                 SetPreviewMaterial(isValid ? _previewValidMaterial : _previewInvalidMaterial);
 
@@ -708,6 +732,10 @@ namespace LemonEmpire.Core
                     else if (isOverlappingWall)
                     {
                         errorMsg = "Предмет упирается в стену!";
+                    }
+                    else if (!isPlacementValidForWarehouse)
+                    {
+                        errorMsg = "Складские стеллажи можно размещать только на складе!";
                     }
 
                     if (_errorLabel != null)

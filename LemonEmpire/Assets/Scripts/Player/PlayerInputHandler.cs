@@ -158,6 +158,12 @@ namespace LemonEmpire.Player
 
         private void OnTablet(InputValue value)
         {
+            if (tabletUI != null && tabletUI.IsOpen)
+            {
+                tabletUI.Close();
+                return;
+            }
+
             if (IsGameplayBlocked) return;
             tabletUI?.Toggle();
         }

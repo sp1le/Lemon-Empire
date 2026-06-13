@@ -176,11 +176,56 @@ namespace LemonEmpire.Editor
                 }
             }
 
-            // Warehouse dividers (Z = 9, dividing sections)
-            SpawnPrefab(wallPrefab, new Vector3(-9f, -1.35f, 9f), Quaternion.Euler(0f, 90f, 0f), wallsGo.transform);
-            SpawnPrefab(wallPrefab, new Vector3(-6f, -1.35f, 9f), Quaternion.Euler(0f, 90f, 0f), wallsGo.transform);
-            SpawnPrefab(wallPrefab, new Vector3(-3f, -1.35f, 9f), Quaternion.Euler(0f, 90f, 0f), wallsGo.transform);
-            SpawnPrefab(wallPrefab, new Vector3(0f, -1.35f, 9f), Quaternion.Euler(0f, 90f, 0f), wallsGo.transform);
+            // Warehouse dividers (Z = 7, 9, 11 to fully close compartments)
+            System.Action<GameObject> addObstacle = (goObj) => {
+                if (goObj != null) {
+                    var obs = goObj.AddComponent<UnityEngine.AI.NavMeshObstacle>();
+                    obs.carving = true;
+                    obs.size = new Vector3(2.0f, 3.5f, 0.3f);
+                }
+            };
+
+            GameObject divL1 = new GameObject("WarehouseDividers_L1");
+            divL1.transform.SetParent(wallsGo.transform);
+            addObstacle(SpawnPrefab(wallPrefab, new Vector3(0f, -1.35f, 7f), Quaternion.Euler(0f, 90f, 0f), divL1.transform));
+            addObstacle(SpawnPrefab(wallPrefab, new Vector3(0f, -1.35f, 9f), Quaternion.Euler(0f, 90f, 0f), divL1.transform));
+            addObstacle(SpawnPrefab(wallPrefab, new Vector3(0f, -1.35f, 11f), Quaternion.Euler(0f, 90f, 0f), divL1.transform));
+
+            GameObject divL2 = new GameObject("WarehouseDividers_L2");
+            divL2.transform.SetParent(wallsGo.transform);
+            addObstacle(SpawnPrefab(wallPrefab, new Vector3(-3f, -1.35f, 7f), Quaternion.Euler(0f, 90f, 0f), divL2.transform));
+            addObstacle(SpawnPrefab(wallPrefab, new Vector3(-3f, -1.35f, 9f), Quaternion.Euler(0f, 90f, 0f), divL2.transform));
+            addObstacle(SpawnPrefab(wallPrefab, new Vector3(-3f, -1.35f, 11f), Quaternion.Euler(0f, 90f, 0f), divL2.transform));
+
+            GameObject divL3 = new GameObject("WarehouseDividers_L3");
+            divL3.transform.SetParent(wallsGo.transform);
+            addObstacle(SpawnPrefab(wallPrefab, new Vector3(-6f, -1.35f, 7f), Quaternion.Euler(0f, 90f, 0f), divL3.transform));
+            addObstacle(SpawnPrefab(wallPrefab, new Vector3(-6f, -1.35f, 9f), Quaternion.Euler(0f, 90f, 0f), divL3.transform));
+            addObstacle(SpawnPrefab(wallPrefab, new Vector3(-6f, -1.35f, 11f), Quaternion.Euler(0f, 90f, 0f), divL3.transform));
+            addObstacle(SpawnPrefab(wallPrefab, new Vector3(-9f, -1.35f, 7f), Quaternion.Euler(0f, 90f, 0f), divL3.transform));
+            addObstacle(SpawnPrefab(wallPrefab, new Vector3(-9f, -1.35f, 9f), Quaternion.Euler(0f, 90f, 0f), divL3.transform));
+            addObstacle(SpawnPrefab(wallPrefab, new Vector3(-9f, -1.35f, 11f), Quaternion.Euler(0f, 90f, 0f), divL3.transform));
+
+            // Setup Warehouse Upgrade Unlocker Manager in scene
+            GameObject warehouseUnlockerGo = GameObject.Find("WarehouseUpgradeUnlockerManager");
+            if (warehouseUnlockerGo == null)
+            {
+                warehouseUnlockerGo = new GameObject("WarehouseUpgradeUnlockerManager");
+            }
+            var wUnlocker = warehouseUnlockerGo.GetComponent<WarehouseUpgradeUnlocker>();
+            if (wUnlocker == null)
+            {
+                wUnlocker = warehouseUnlockerGo.AddComponent<WarehouseUpgradeUnlocker>();
+            }
+
+            var blocker1Field = typeof(WarehouseUpgradeUnlocker).GetField("blocker1", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            if (blocker1Field != null) blocker1Field.SetValue(wUnlocker, divL1);
+
+            var blocker2Field = typeof(WarehouseUpgradeUnlocker).GetField("blocker2", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            if (blocker2Field != null) blocker2Field.SetValue(wUnlocker, divL2);
+
+            var blocker3Field = typeof(WarehouseUpgradeUnlocker).GetField("blocker3", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            if (blocker3Field != null) blocker3Field.SetValue(wUnlocker, divL3);
 
             // Corridor wall: X = 10, Z from 6 to 12
             // Z = 7: Wall, Z = 9: Doorway (warehouse door), Z = 11: Wall
@@ -224,33 +269,6 @@ namespace LemonEmpire.Editor
             // Lamp in the middle of shop floor
             SpawnHangingLamp(lampPrefab, new Vector3(-5.0f, ceilingY, -3.0f), new Color(1f, 0.75f, 0.4f), 1.8f, decorGo.transform);
             SpawnHangingLamp(lampPrefab, new Vector3(5.0f, ceilingY, -3.0f), new Color(1f, 0.75f, 0.4f), 1.8f, decorGo.transform);
-
-            // 6.3 Potted Cacti (from FurnitureKit) in the corners
-            GameObject cactusPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Models/FurnitureKit/cactus_medium_A.fbx");
-            Material furnMat = AssetDatabase.LoadAssetAtPath<Material>("Assets/Models/FurnitureKit/FurnitureMaterial.mat");
-            if (cactusPrefab != null)
-            {
-                // Left-front corner plant
-                GameObject c1 = SpawnPrefab(cactusPrefab, new Vector3(-10.5f, -1.3f, -10.5f), Quaternion.identity, decorGo.transform);
-                if (c1 != null && furnMat != null) SetMaterialsRecursively(c1, furnMat);
-
-                // Right-front corner plant
-                GameObject c2 = SpawnPrefab(cactusPrefab, new Vector3(10.5f, -1.3f, -10.5f), Quaternion.identity, decorGo.transform);
-                if (c2 != null && furnMat != null) SetMaterialsRecursively(c2, furnMat);
-            }
-
-            // 6.4 Wall Art/Frames
-            GameObject framePrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Models/FurnitureKit/pictureframe_large_A.fbx");
-            if (framePrefab != null)
-            {
-                // Frame on LeftWall (facing +X)
-                GameObject f1 = SpawnPrefab(framePrefab, new Vector3(-11.8f, 0.5f, -2.0f), Quaternion.Euler(0f, 90f, 0f), decorGo.transform);
-                if (f1 != null && furnMat != null) SetMaterialsRecursively(f1, furnMat);
-
-                // Frame on CenterWall divider (facing -X)
-                GameObject f2 = SpawnPrefab(framePrefab, new Vector3(-0.2f, 0.5f, -4.0f), Quaternion.Euler(0f, -90f, 0f), decorGo.transform);
-                if (f2 != null && furnMat != null) SetMaterialsRecursively(f2, furnMat);
-            }
 
             // 7. Configure Player starting position and LeftHallUnlocker manager
             GameObject playerGo = GameObject.Find("Player");
@@ -304,6 +322,9 @@ namespace LemonEmpire.Editor
                 rack2.transform.position = new Vector3(11.62f, -1.30f, 7.4f);
                 Debug.Log("[WallRebuilder] Moved BroomToolRack 2 to (11.62, -1.3, 7.4).");
             }
+
+            // Fix Warehouse Shelf Prefab material
+            FixWarehouseShelfPrefab(plasticMat);
 
             // Save Scene
             var activeScene = EditorSceneManager.GetActiveScene();
@@ -855,6 +876,45 @@ namespace LemonEmpire.Editor
             GameObject prefab = PrefabUtility.SaveAsPrefabAsset(go, path);
             Object.DestroyImmediate(go);
             return prefab;
+        }
+
+        private static void FixWarehouseShelfPrefab(Material defaultMat)
+        {
+            string path = "Assets/Prefabs/WarehouseShelf.prefab";
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+            if (prefab == null)
+            {
+                Debug.LogWarning("WarehouseShelf prefab not found at " + path);
+                return;
+            }
+
+            var renderers = prefab.GetComponentsInChildren<MeshRenderer>(true);
+            bool anyChanged = false;
+            foreach (var r in renderers)
+            {
+                var mats = r.sharedMaterials;
+                bool changed = false;
+                for (int i = 0; i < mats.Length; i++)
+                {
+                    if (mats[i] == null)
+                    {
+                        mats[i] = defaultMat;
+                        changed = true;
+                    }
+                }
+                if (changed)
+                {
+                    r.sharedMaterials = mats;
+                    EditorUtility.SetDirty(r);
+                    anyChanged = true;
+                }
+            }
+
+            if (anyChanged)
+            {
+                AssetDatabase.SaveAssets();
+                Debug.Log("WarehouseShelf prefab materials fixed successfully with " + defaultMat.name);
+            }
         }
     }
 }

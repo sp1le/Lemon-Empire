@@ -1808,6 +1808,23 @@ namespace LemonEmpire.UI
                 ("Премиум-полки (Premium)",        "Премиум-полки",                   400, () => UpgradeManager.HasPremiumShelves),
             };
 
+            if (UpgradeManager.WarehouseUpgradeLevel == 0)
+            {
+                upgrades.Add(("Модернизация склада I (Секция 1)", "Модернизация склада I", 300, () => false));
+            }
+            else if (UpgradeManager.WarehouseUpgradeLevel == 1)
+            {
+                upgrades.Add(("Модернизация склада II (Секция 2)", "Модернизация склада II", 450, () => false));
+            }
+            else if (UpgradeManager.WarehouseUpgradeLevel == 2)
+            {
+                upgrades.Add(("Модернизация склада III (Секция 3)", "Модернизация склада III", 600, () => false));
+            }
+            else
+            {
+                upgrades.Add(("Модернизация склада (Макс. уровень)", "Модернизация склада III", 600, () => true));
+            }
+
             var scroll = new ScrollView();
             scroll.style.flexGrow = 1f;
             parent.Add(scroll);
