@@ -58,9 +58,6 @@ namespace LemonEmpire.Core
             _grid = new BuildGrid();
 
             // Destroy starting unique objects pre-placed in scene
-            var oldJukebox = GameObject.Find("ShopObjects/Jukebox");
-            if (oldJukebox != null) Destroy(oldJukebox);
-
             var oldVending = GameObject.Find("ShopObjects/VendingMachine");
             if (oldVending != null) Destroy(oldVending);
         }
@@ -111,9 +108,9 @@ namespace LemonEmpire.Core
             List<int> indices = new List<int>();
 
             float targetY = -1.34f;
-            float start = -12f;
-            float end = 12f;
-            float step = 0.5f;
+            float start = -BuildGrid.HalfWidth;
+            float end = BuildGrid.HalfWidth;
+            float step = BuildGrid.CellSize;
 
             int index = 0;
 
@@ -178,6 +175,7 @@ namespace LemonEmpire.Core
                 if (col.GetComponentInParent<DisplayStand>() != null ||
                     col.GetComponentInParent<CoolerStand>() != null ||
                     col.GetComponentInParent<CustomerTable>() != null ||
+                    col.GetComponentInParent<LemonEmpire.Production.VendingMachine>() != null ||
                     col.name.Contains("CustomerTableGroup") ||
                     (col.transform.parent != null && col.transform.parent.name.StartsWith("CustomerTableGroup")))
                 {
@@ -192,6 +190,20 @@ namespace LemonEmpire.Core
                 }
 
                 _grid.OccupyGridFromCollider(col);
+            }
+
+            // Explicitly occupy grid cells for the Jukebox (even if inactive/not purchased yet)
+            var jukeboxes = FindObjectsByType<LemonEmpire.Production.Jukebox>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            foreach (var j in jukeboxes)
+            {
+                var col = j.GetComponent<Collider>();
+                if (col != null)
+                {
+                    bool wasActive = j.gameObject.activeSelf;
+                    if (!wasActive) j.gameObject.SetActive(true);
+                    _grid.OccupyGridFromCollider(col);
+                    if (!wasActive) j.gameObject.SetActive(false);
+                }
             }
         }
 
@@ -208,12 +220,6 @@ namespace LemonEmpire.Core
                 SetupAndSnapStartingFurniture(ds.gameObject, displaySO, 150f);
             }
 
-            var coolerStands = FindObjectsByType<CoolerStand>(FindObjectsSortMode.None);
-            foreach (var cs in coolerStands)
-            {
-                SetupAndSnapStartingFurniture(cs.gameObject, coolerSO, 600f);
-            }
-
             var tables = FindObjectsByType<CustomerTable>(FindObjectsSortMode.None);
             var tableSO = Resources.Load<BuildableItemSO>("Items/CustomerTableGroup");
             foreach (var t in tables)
@@ -226,6 +232,13 @@ namespace LemonEmpire.Core
                         SetupAndSnapStartingFurniture(parentGroup.gameObject, tableSO, 400f);
                     }
                 }
+            }
+
+            var vendingMachines = FindObjectsByType<LemonEmpire.Production.VendingMachine>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            var vendingSO = Resources.Load<BuildableItemSO>("Items/VendingMachine");
+            foreach (var v in vendingMachines)
+            {
+                SetupAndSnapStartingFurniture(v.gameObject, vendingSO, 150f);
             }
         }
 
@@ -258,8 +271,29 @@ namespace LemonEmpire.Core
                 safetyCounter++;
             }
 
+            int w = itemSO.sizeInCells.x;
+            int h = itemSO.sizeInCells.y;
+            if (rotAngle == 90 || rotAngle == 270)
+            {
+                w = itemSO.sizeInCells.y;
+                h = itemSO.sizeInCells.x;
+            }
             Vector3 snappedPos = _grid.GridToWorld(gridCell);
-            snappedPos.y = obj.transform.position.y; // Keep original height
+            snappedPos.x += (w - 1) * BuildGrid.CellSize * 0.5f;
+            snappedPos.z += (h - 1) * BuildGrid.CellSize * 0.5f;
+            // Calculate height offset to align bottom with floor plane (-1.30f)
+            float lowestY = 0f;
+            var renderers = obj.GetComponentsInChildren<Renderer>();
+            if (renderers.Length > 0)
+            {
+                Bounds b = renderers[0].bounds;
+                for (int i = 1; i < renderers.Length; i++)
+                {
+                    b.Encapsulate(renderers[i].bounds);
+                }
+                lowestY = b.min.y - obj.transform.position.y;
+            }
+            snappedPos.y = -1.30f - lowestY;
             obj.transform.position = snappedPos;
 
             var placed = obj.AddComponent<PlacedFurniture>();
@@ -274,10 +308,10 @@ namespace LemonEmpire.Core
             if (col == null) return cells;
             Bounds b = col.bounds;
 
-            int minX = Mathf.FloorToInt((b.min.x + 12f) / 0.5f);
-            int maxX = Mathf.CeilToInt((b.max.x + 12f) / 0.5f) - 1;
-            int minZ = Mathf.FloorToInt((b.min.z + 12f) / 0.5f);
-            int maxZ = Mathf.CeilToInt((b.max.z + 12f) / 0.5f) - 1;
+            int minX = Mathf.FloorToInt((b.min.x + BuildGrid.HalfWidth) / BuildGrid.CellSize);
+            int maxX = Mathf.CeilToInt((b.max.x + BuildGrid.HalfWidth) / BuildGrid.CellSize) - 1;
+            int minZ = Mathf.FloorToInt((b.min.z + BuildGrid.HalfWidth) / BuildGrid.CellSize);
+            int maxZ = Mathf.CeilToInt((b.max.z + BuildGrid.HalfWidth) / BuildGrid.CellSize) - 1;
 
             for (int x = minX; x <= maxX; x++)
             {
@@ -526,6 +560,50 @@ namespace LemonEmpire.Core
             }
         }
 
+        private bool IsPreviewOverlappingWall()
+        {
+            if (_previewInstance == null) return false;
+            
+            var colliders = _previewInstance.GetComponents<BoxCollider>();
+            if (colliders == null || colliders.Length == 0)
+            {
+                colliders = _previewInstance.GetComponentsInChildren<BoxCollider>();
+            }
+            foreach (var box in colliders)
+            {
+                Vector3 worldCenter = box.transform.TransformPoint(box.center);
+                Vector3 halfExtents = Vector3.Scale(box.size, box.transform.lossyScale) * 0.5f;
+                // Shrink slightly to avoid false positives when placed flush against walls
+                halfExtents.x = Mathf.Max(0.01f, halfExtents.x - 0.02f);
+                halfExtents.y = Mathf.Max(0.01f, halfExtents.y - 0.02f);
+                halfExtents.z = Mathf.Max(0.01f, halfExtents.z - 0.02f);
+                Quaternion worldRot = box.transform.rotation;
+                
+                Collider[] overlaps = Physics.OverlapBox(worldCenter, halfExtents, worldRot, Physics.AllLayers, QueryTriggerInteraction.Ignore);
+                foreach (var other in overlaps)
+                {
+                    if (other.isTrigger) continue;
+                    if (other.transform.root == _previewInstance.transform.root) continue;
+                    if (other.transform.root.name == "Player") continue;
+                    if (other.name.Contains("StoreFloor") || other.name.Contains("StoreCeiling") || other.name.Contains("GrassBase")) continue;
+                    
+                    if (other.GetComponentInParent<DisplayStand>() != null ||
+                        other.GetComponentInParent<CustomerTable>() != null ||
+                        other.GetComponentInParent<LemonEmpire.Production.VendingMachine>() != null ||
+                        other.name.Contains("CustomerTableGroup") ||
+                        (other.transform.parent != null && other.transform.parent.name.StartsWith("CustomerTableGroup")))
+                    {
+                        continue;
+                    }
+                    
+                    Debug.Log($"[BuildModeManager] Preview overlaps with wall/static object: {other.gameObject.name}");
+                    return true;
+                }
+            }
+            
+            return false;
+        }
+
         private void HandlePlacementMode()
         {
             if (Camera.main == null || _previewInstance == null || _selectedItem == null) return;
@@ -556,6 +634,16 @@ namespace LemonEmpire.Core
 
                 Vector3 previewPos = snappedWorldPos;
                 previewPos.y += _pivotOffsetY;
+
+                int w = _selectedItem.sizeInCells.x;
+                int h = _selectedItem.sizeInCells.y;
+                if (_rotationAngle == 90 || _rotationAngle == 270)
+                {
+                    w = _selectedItem.sizeInCells.y;
+                    h = _selectedItem.sizeInCells.x;
+                }
+                previewPos.x += (w - 1) * BuildGrid.CellSize * 0.5f;
+                previewPos.z += (h - 1) * BuildGrid.CellSize * 0.5f;
 
                 _previewInstance.transform.position = previewPos;
                 _previewInstance.transform.rotation = Quaternion.Euler(0f, _rotationAngle, 0f);
@@ -588,8 +676,9 @@ namespace LemonEmpire.Core
 
                 bool isUniqueLimitReached = _selectedItem.isUnique && IsItemAlreadyBuilt(_selectedItem);
                 bool isInsufficientFunds = EconomyManager.Instance != null && EconomyManager.Instance.Balance < _currentPlacementCost;
+                bool isOverlappingWall = IsPreviewOverlappingWall();
 
-                bool isValid = !isOutside && !isLeftHallLocked && !isOccupied && !isUniqueLimitReached && !isInsufficientFunds;
+                bool isValid = !isOutside && !isLeftHallLocked && !isOccupied && !isUniqueLimitReached && !isInsufficientFunds && !isOverlappingWall;
 
                 SetPreviewMaterial(isValid ? _previewValidMaterial : _previewInvalidMaterial);
 
@@ -615,6 +704,10 @@ namespace LemonEmpire.Core
                     else if (isInsufficientFunds)
                     {
                         errorMsg = "Недостаточно средств для покупки";
+                    }
+                    else if (isOverlappingWall)
+                    {
+                        errorMsg = "Предмет упирается в стену!";
                     }
 
                     if (_errorLabel != null)
@@ -1012,6 +1105,12 @@ namespace LemonEmpire.Core
 
             foreach (var item in items)
             {
+                // Jukebox is now a static upgrade purchased on the upgrades tab, not dynamic furniture
+                if (item.itemName == "Музыкальный Автомат" || item.itemName == "Jukebox" || item.name == "Jukebox")
+                {
+                    continue;
+                }
+
                 var card = new VisualElement();
                 card.style.width = 175f;
                 card.style.height = 136f;

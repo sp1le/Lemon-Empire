@@ -19,14 +19,14 @@ namespace LemonEmpire.Production
 
         private void Start()
         {
-            // Find active scene objects at startup before they are hidden
-            var jb = FindFirstObjectByType<Jukebox>();
+            // Find active or inactive scene objects at startup before they are hidden
+            var jb = FindFirstObjectByType<Jukebox>(FindObjectsInactive.Include);
             if (jb != null) _jukebox = jb.gameObject;
 
-            var vm = FindFirstObjectByType<VendingMachine>();
+            var vm = FindFirstObjectByType<VendingMachine>(FindObjectsInactive.Include);
             if (vm != null) _vending = vm.gameObject;
 
-            var tb = FindFirstObjectByType<TrashBin>();
+            var tb = FindFirstObjectByType<TrashBin>(FindObjectsInactive.Include);
             if (tb != null) _trashBin = tb.gameObject;
 
             UpdateVisuals();

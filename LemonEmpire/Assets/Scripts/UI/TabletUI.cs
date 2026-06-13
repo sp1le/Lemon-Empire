@@ -1861,7 +1861,7 @@ namespace LemonEmpire.UI
                 _ => null
             };
 
-            bool isUniquePlaceable = managerName == "Музыкальный автомат (Jukebox)" || managerName == "Торговый автомат (Snacks)";
+            bool isUniquePlaceable = managerName == "Торговый автомат (Snacks)";
 
             var actionBtn = new Button();
             actionBtn.style.width  = 130f;
@@ -1875,18 +1875,29 @@ namespace LemonEmpire.UI
             {
                 float balance  = EconomyManager.Instance != null ? EconomyManager.Instance.Balance : 0f;
                 bool canAfford = balance >= cost;
-                actionBtn.text = "Купить";
-                actionBtn.style.backgroundColor = new StyleColor(canAfford ? ColorGreen : new Color(0.75f, 0.2f, 0.2f));
-                actionBtn.style.color           = new StyleColor(Color.white);
-                actionBtn.enabledSelf = true;
 
-                string capManagerName = managerName;
-                int    capCost = cost;
-                actionBtn.clicked += () =>
+                if (managerName == "Музыкальный автомат (Jukebox)" && !UpgradeManager.IsLeftHallUnlocked)
                 {
-                    if (UpgradeManager.TryPurchaseUpgrade(capManagerName, capCost))
-                        RefreshTab(3); // Rebuild upgrades tab to reflect purchase
-                };
+                    actionBtn.text = "Закрыто";
+                    actionBtn.style.backgroundColor = new StyleColor(ColorBorder);
+                    actionBtn.style.color           = new StyleColor(ColorTextMuted);
+                    actionBtn.enabledSelf = false;
+                }
+                else
+                {
+                    actionBtn.text = "Купить";
+                    actionBtn.style.backgroundColor = new StyleColor(canAfford ? ColorGreen : new Color(0.75f, 0.2f, 0.2f));
+                    actionBtn.style.color           = new StyleColor(Color.white);
+                    actionBtn.enabledSelf = true;
+
+                    string capManagerName = managerName;
+                    int    capCost = cost;
+                    actionBtn.clicked += () =>
+                    {
+                        if (UpgradeManager.TryPurchaseUpgrade(capManagerName, capCost))
+                            RefreshTab(3); // Rebuild upgrades tab to reflect purchase
+                    };
+                }
             }
             else
             {

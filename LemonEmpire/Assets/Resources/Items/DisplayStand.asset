@@ -16,7 +16,7 @@ MonoBehaviour:
   category: 0
   cost: 150
   isUnique: 0
-  sizeInCells: {x: 2, y: 1}
+  sizeInCells: {x: 3, y: 1}
   previewPrefab: {fileID: 1329192649430259499, guid: a480e75b4b8af05459ca567596c35959, type: 3}
   realPrefab: {fileID: 1329192649430259499, guid: a480e75b4b8af05459ca567596c35959, type: 3}
   icon: {fileID: 0}

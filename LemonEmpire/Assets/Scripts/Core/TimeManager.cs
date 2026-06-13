@@ -38,6 +38,7 @@ namespace LemonEmpire.Core
             Instance = this;
 
             _timeMultiplier = 24f / (realMinutesPerDay * 60f);
+            Application.targetFrameRate = 180;
         }
 
         private void Start()

@@ -5,9 +5,9 @@ namespace LemonEmpire.Core
 {
     public class BuildGrid
     {
-        private const float CellSize = 0.5f;
-        private const float HalfWidth = 12f; // Shop floor size is 24x24 (-12 to 12)
-        private const int GridSize = 48;     // 24 / 0.5 = 48 cells
+        public const float HalfWidth = 11.84f; // Shop floor inside baseboards size is 23.68x23.68 (-11.84 to 11.84)
+        public const int GridSize = 48;     // 48 cells
+        public const float CellSize = HalfWidth * 2f / GridSize; // ~0.4933333f
 
         private readonly HashSet<Vector2Int> _occupiedCells = new HashSet<Vector2Int>();
 

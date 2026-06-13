@@ -274,7 +274,16 @@ namespace LemonEmpire.UI
                     leftSide.style.maxWidth = Length.Percent(70);
                     row.Add(leftSide);
 
-                    string tableName = t.gameObject.name.Replace("Table", "Стол").Replace("table", "Стол");
+                    string tableName = t.gameObject.name;
+                    if (tableName.StartsWith("CustomerTableGroup_"))
+                    {
+                        string num = tableName.Substring("CustomerTableGroup_".Length);
+                        tableName = $"Стол {num}";
+                    }
+                    else
+                    {
+                        tableName = tableName.Replace("Table", "Стол").Replace("table", "Стол");
+                    }
                     
                     string desc = "Принять заказ";
                     if (t.State == LemonEmpire.Production.TableState.WaitingForDrink)
@@ -292,9 +301,10 @@ namespace LemonEmpire.UI
                     }
 
                     var textLbl = new Label($"{tableName}: {desc}");
-                    textLbl.style.fontSize = 13f;
+                    textLbl.style.fontSize = 12f;
                     textLbl.style.color = new StyleColor(Color.white);
                     textLbl.style.unityFontStyleAndWeight = FontStyle.Bold;
+                    textLbl.style.whiteSpace = WhiteSpace.Normal;
                     leftSide.Add(textLbl);
 
                     var rightSide = new VisualElement();
