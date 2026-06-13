@@ -206,6 +206,13 @@ namespace LemonEmpire.Core
                     if (!wasActive) j.gameObject.SetActive(false);
                 }
             }
+
+            // Occupy cells of currently placed/active furniture
+            var placedObjects = FindObjectsByType<PlacedFurniture>(FindObjectsSortMode.None);
+            foreach (var pf in placedObjects)
+            {
+                _grid.OccupyCells(pf.occupiedCells);
+            }
         }
 
         private void SetupStartingFurniture()
@@ -216,9 +223,14 @@ namespace LemonEmpire.Core
 
             foreach (var ds in displayStands)
             {
-                if (ds is CoolerStand) continue; // Handle cooler stands separately
-
-                SetupAndSnapStartingFurniture(ds.gameObject, displaySO, 150f);
+                if (ds is CoolerStand cs)
+                {
+                    SetupAndSnapStartingFurniture(cs.gameObject, coolerSO, 150f);
+                }
+                else
+                {
+                    SetupAndSnapStartingFurniture(ds.gameObject, displaySO, 150f);
+                }
             }
 
             var tables = FindObjectsByType<CustomerTable>(FindObjectsSortMode.None);
@@ -418,6 +430,8 @@ namespace LemonEmpire.Core
 
             if (_isBuildModeActive)
             {
+                InitializeGridOccupancy();
+
                 // Lock player movement/actions via Cursor
                 UnityEngine.Cursor.lockState = CursorLockMode.None;
                 UnityEngine.Cursor.visible = true;
@@ -658,6 +672,7 @@ namespace LemonEmpire.Core
 
                 bool isOutside = false;
                 bool isLeftHallLocked = false;
+                bool isWarehouseLocked = false;
                 bool isOccupied = false;
 
                 foreach (var cell in cellsToOccupy)
@@ -669,11 +684,29 @@ namespace LemonEmpire.Core
                     else
                     {
                         Vector3 wPos = _grid.GridToWorld(cell);
-                        if (!UpgradeManager.IsLeftHallUnlocked && wPos.x < 0f)
+                        if (wPos.z < 5.8f) // Shop area
                         {
-                            isLeftHallLocked = true;
+                            if (!UpgradeManager.IsLeftHallUnlocked && wPos.x < 0f)
+                            {
+                                isLeftHallLocked = true;
+                            }
                         }
-                        else if (_grid.IsCellOccupied(cell))
+                        else // Warehouse area
+                        {
+                            float minX = UpgradeManager.WarehouseUpgradeLevel switch
+                            {
+                                0 => 0.0f,
+                                1 => -3.0f,
+                                2 => -6.0f,
+                                _ => -12.2f
+                            };
+                            if (wPos.x < minX)
+                            {
+                                isWarehouseLocked = true;
+                            }
+                        }
+
+                        if (!isLeftHallLocked && !isWarehouseLocked && _grid.IsCellOccupied(cell))
                         {
                             isOccupied = true;
                         }
@@ -699,7 +732,7 @@ namespace LemonEmpire.Core
                     }
                 }
 
-                bool isValid = !isOutside && !isLeftHallLocked && !isOccupied && !isUniqueLimitReached && !isInsufficientFunds && !isOverlappingWall && isPlacementValidForWarehouse;
+                bool isValid = !isOutside && !isLeftHallLocked && !isWarehouseLocked && !isOccupied && !isUniqueLimitReached && !isInsufficientFunds && !isOverlappingWall && isPlacementValidForWarehouse;
 
                 SetPreviewMaterial(isValid ? _previewValidMaterial : _previewInvalidMaterial);
 
@@ -713,6 +746,10 @@ namespace LemonEmpire.Core
                     else if (isLeftHallLocked)
                     {
                         errorMsg = "Левый зал еще не разблокирован";
+                    }
+                    else if (isWarehouseLocked)
+                    {
+                        errorMsg = "Эта складская зона еще не разблокирована!";
                     }
                     else if (isOccupied)
                     {

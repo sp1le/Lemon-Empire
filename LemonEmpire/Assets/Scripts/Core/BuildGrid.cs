@@ -40,11 +40,30 @@ namespace LemonEmpire.Core
         {
             if (!IsValidCell(cell)) return true; // Outside bounds is treated as occupied
             
-            // Left hall lock check
             Vector3 worldPos = GridToWorld(cell);
-            if (!UpgradeManager.IsLeftHallUnlocked && worldPos.x < 0f)
+            
+            // Left hall lock check - ONLY in the main shop area (Z < 5.8f)
+            if (worldPos.z < 5.8f)
             {
-                return true; // Blocked if Left Hall is locked
+                if (!UpgradeManager.IsLeftHallUnlocked && worldPos.x < 0f)
+                {
+                    return true; // Blocked if Left Hall is locked
+                }
+            }
+            else // Warehouse area (Z >= 5.8f)
+            {
+                // Warehouse upgrade level boundary check
+                float minX = UpgradeManager.WarehouseUpgradeLevel switch
+                {
+                    0 => 0.0f,
+                    1 => -3.0f,
+                    2 => -6.0f,
+                    _ => -12.2f
+                };
+                if (worldPos.x < minX)
+                {
+                    return true; // Blocked if this part of the warehouse is locked
+                }
             }
 
             return _occupiedCells.Contains(cell);
