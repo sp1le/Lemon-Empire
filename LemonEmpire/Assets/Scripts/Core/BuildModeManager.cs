@@ -595,10 +595,7 @@ namespace LemonEmpire.Core
                     if (other.transform.root.name == "Player") continue;
                     if (other.name.Contains("StoreFloor") || other.name.Contains("StoreCeiling") || other.name.Contains("GrassBase")) continue;
                     
-                    if (other.GetComponentInParent<DisplayStand>() != null ||
-                        other.GetComponentInParent<CustomerTable>() != null ||
-                        other.GetComponentInParent<LemonEmpire.Production.VendingMachine>() != null ||
-                        other.GetComponentInParent<WarehouseShelf>() != null ||
+                    if (other.GetComponentInParent<PlacedFurniture>() != null ||
                         other.name.Contains("CustomerTableGroup") ||
                         (other.transform.parent != null && other.transform.parent.name.StartsWith("CustomerTableGroup")))
                     {
