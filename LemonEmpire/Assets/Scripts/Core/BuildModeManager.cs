@@ -814,7 +814,7 @@ namespace LemonEmpire.Core
             Ray ray = Camera.main.ScreenPointToRay(mousePos);
             if (Physics.Raycast(ray, out RaycastHit hit, 50f))
             {
-                var furniture = hit.transform.root.GetComponent<PlacedFurniture>();
+                var furniture = hit.transform.GetComponentInParent<PlacedFurniture>();
                 if (furniture != null)
                 {
                     _hoveredFurniture = furniture;
