@@ -170,7 +170,8 @@ namespace LemonEmpire.Editor
                 GameObject wall = SpawnPrefab(wallPrefab, new Vector3(0f, -1.35f, z), Quaternion.Euler(0f, 90f, 0f), dividerParent.transform);
                 if (wall != null)
                 {
-                    var obstacle = wall.AddComponent<UnityEngine.AI.NavMeshObstacle>();
+                    var obstacle = wall.GetComponent<UnityEngine.AI.NavMeshObstacle>();
+                    if (obstacle == null) obstacle = wall.AddComponent<UnityEngine.AI.NavMeshObstacle>();
                     obstacle.carving = true;
                     obstacle.size = new Vector3(2.0f, 3.5f, 0.3f);
                 }
@@ -179,7 +180,8 @@ namespace LemonEmpire.Editor
             // Warehouse dividers (Z = 7, 9, 11 to fully close compartments)
             System.Action<GameObject> addObstacle = (goObj) => {
                 if (goObj != null) {
-                    var obs = goObj.AddComponent<UnityEngine.AI.NavMeshObstacle>();
+                    var obs = goObj.GetComponent<UnityEngine.AI.NavMeshObstacle>();
+                    if (obs == null) obs = goObj.AddComponent<UnityEngine.AI.NavMeshObstacle>();
                     obs.carving = true;
                     obs.size = new Vector3(2.0f, 3.5f, 0.3f);
                 }
@@ -510,6 +512,12 @@ namespace LemonEmpire.Editor
             molding.transform.localScale = new Vector3(2.0f, 0.15f, 0.32f);
             molding.GetComponent<MeshRenderer>().sharedMaterials = new Material[] { woodMat };
 
+            // Add dynamic NavMeshObstacle to block NPCs from walking through walls
+            var obstacle = go.AddComponent<UnityEngine.AI.NavMeshObstacle>();
+            obstacle.carving = true;
+            obstacle.size = new Vector3(2.0f, 3.5f, 0.3f);
+            obstacle.center = new Vector3(0f, 1.75f, 0f);
+
             GameObject prefab = PrefabUtility.SaveAsPrefabAsset(go, path);
             Object.DestroyImmediate(go);
             return prefab;
@@ -543,6 +551,12 @@ namespace LemonEmpire.Editor
             cap.transform.localPosition = new Vector3(0f, 3.4f, 0f);
             cap.transform.localScale = new Vector3(0.44f, 0.2f, 0.44f);
             cap.GetComponent<MeshRenderer>().sharedMaterials = new Material[] { woodMat };
+
+            // Add dynamic NavMeshObstacle to block NPCs from walking through pillars
+            var obstacle = go.AddComponent<UnityEngine.AI.NavMeshObstacle>();
+            obstacle.carving = true;
+            obstacle.size = new Vector3(0.4f, 3.5f, 0.4f);
+            obstacle.center = new Vector3(0f, 1.75f, 0f);
 
             GameObject prefab = PrefabUtility.SaveAsPrefabAsset(go, path);
             Object.DestroyImmediate(go);
@@ -659,6 +673,12 @@ namespace LemonEmpire.Editor
             molding.transform.localPosition = new Vector3(0f, 3.425f, 0f);
             molding.transform.localScale = new Vector3(2.0f, 0.15f, 0.32f);
             molding.GetComponent<MeshRenderer>().sharedMaterials = new Material[] { woodMat };
+
+            // Add dynamic NavMeshObstacle to block NPCs from walking through windows
+            var obstacle = go.AddComponent<UnityEngine.AI.NavMeshObstacle>();
+            obstacle.carving = true;
+            obstacle.size = new Vector3(2.0f, 3.5f, 0.3f);
+            obstacle.center = new Vector3(0f, 1.75f, 0f);
 
             GameObject prefab = PrefabUtility.SaveAsPrefabAsset(go, path);
             Object.DestroyImmediate(go);

@@ -328,6 +328,61 @@ namespace LemonEmpire.UI
                 }
             }
 
+            // Also check ServiceCounter for waiting bar customers
+            var counter = Object.FindFirstObjectByType<LemonEmpire.Production.ServiceCounter>();
+            if (counter != null)
+            {
+                var waitingNPCs = counter.GetWaitingCustomers();
+                foreach (var npc in waitingNPCs)
+                {
+                    hasOrders = true;
+
+                    var row = new VisualElement();
+                    row.style.flexDirection = FlexDirection.Row;
+                    row.style.justifyContent = Justify.SpaceBetween;
+                    row.style.alignItems = Align.Center;
+                    row.style.marginBottom = 8f;
+                    _ordersContainer.Add(row);
+
+                    var leftSide = new VisualElement();
+                    leftSide.style.flexDirection = FlexDirection.Row;
+                    leftSide.style.alignItems = Align.Center;
+                    leftSide.style.maxWidth = Length.Percent(70);
+                    row.Add(leftSide);
+
+                    string displayName = "Стойка";
+                    string desc = npc.BarState == LemonEmpire.Trading.NPCBuyer.BarCustomerState.WaitingForOrder ? "Принять заказ" : "Ожидает напиток";
+                    if (npc.BarState == LemonEmpire.Trading.NPCBuyer.BarCustomerState.WaitingForDrink)
+                    {
+                        desc = $"{TranslateArchetype(npc.Archetype)} (Сахар: {npc.MinSugar:F0}-{npc.MaxSugar:F0}%, {TranslatePackaging(npc.PreferredPackaging)})";
+                    }
+
+                    var textLbl = new Label($"{displayName}: {desc}");
+                    textLbl.style.fontSize = 12f;
+                    textLbl.style.color = new StyleColor(Color.white);
+                    textLbl.style.unityFontStyleAndWeight = FontStyle.Bold;
+                    textLbl.style.whiteSpace = WhiteSpace.Normal;
+                    leftSide.Add(textLbl);
+
+                    var rightSide = new VisualElement();
+                    rightSide.style.flexDirection = FlexDirection.Row;
+                    rightSide.style.alignItems = Align.Center;
+                    row.Add(rightSide);
+
+                    var hourGlass = new Label("⏳");
+                    hourGlass.style.fontSize = 14f;
+                    hourGlass.style.marginRight = 6f;
+                    rightSide.Add(hourGlass);
+
+                    float patience = npc.QueuePatienceTimer;
+                    var timerLbl = new Label($"{Mathf.RoundToInt(patience)}с");
+                    timerLbl.style.fontSize = 13f;
+                    timerLbl.style.color = new StyleColor(patience < 15f ? new Color(0.98f, 0.36f, 0.32f, 1f) : Color.white);
+                    timerLbl.style.unityFontStyleAndWeight = FontStyle.Bold;
+                    rightSide.Add(timerLbl);
+                }
+            }
+
             if (!hasOrders)
             {
                 var noOrdersLbl = new Label("Нет активных заказов");
@@ -335,6 +390,30 @@ namespace LemonEmpire.UI
                 noOrdersLbl.style.color = new StyleColor(new Color(0.58f, 0.55f, 0.51f, 1f));
                 noOrdersLbl.style.unityFontStyleAndWeight = FontStyle.Italic;
                 _ordersContainer.Add(noOrdersLbl);
+            }
+        }
+
+        private string TranslateArchetype(LemonEmpire.Trading.NPCArchetype archetype)
+        {
+            switch (archetype)
+            {
+                case LemonEmpire.Trading.NPCArchetype.Kids: return "Ребенок";
+                case LemonEmpire.Trading.NPCArchetype.Athletes: return "Спортсмен";
+                case LemonEmpire.Trading.NPCArchetype.Hipsters: return "Хипстер";
+                case LemonEmpire.Trading.NPCArchetype.PartyAnimals: return "Тусовщик";
+                default: return "Покупатель";
+            }
+        }
+
+        private string TranslatePackaging(PackagingType? pkg)
+        {
+            if (!pkg.HasValue) return "Любая тара";
+            switch (pkg.Value)
+            {
+                case PackagingType.Plastic: return "Пластик";
+                case PackagingType.Can: return "Жестянка";
+                case PackagingType.Glass: return "Стекло";
+                default: return "Любая тара";
             }
         }
 

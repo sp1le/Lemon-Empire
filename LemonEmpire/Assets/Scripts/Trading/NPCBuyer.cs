@@ -6,6 +6,7 @@ using LemonEmpire.Network;
 using System.Collections;
 using System.Collections.Generic;
 using LemonEmpire.Production;
+using LemonEmpire.Player;
 
 namespace LemonEmpire.Trading
 {
@@ -26,8 +27,18 @@ namespace LemonEmpire.Trading
     }
 
     [RequireComponent(typeof(NavMeshAgent))]
-    public class NPCBuyer : MonoBehaviour
+    public class NPCBuyer : MonoBehaviour, IInteractable
     {
+        public enum BarCustomerState
+        {
+            None,
+            WalkingToQueue,
+            WaitingInLine,
+            WaitingForOrder,
+            WaitingForDrink,
+            Drinking,
+            Leaving
+        }
         [Header("NPC Settings")]
         [SerializeField] private float evaluateTime = 2f;
         [SerializeField] private float priceToleranceBase = 1.0f;
@@ -46,8 +57,20 @@ namespace LemonEmpire.Trading
         private Transform _assignedChair;
         private bool _isSitting;
 
+        // Bar queue variables
+        private bool _isInBarQueue = false;
+        private float _queuePatienceTimer = 45f;
+        private float _maxQueuePatience = 45f;
+        private bool _patienceInitialized = false;
+        private BarCustomerState _barState = BarCustomerState.None;
+        private LemonEmpire.UI.NPCPatienceUI _patienceUI;
+
         public NPCState State => _state;
         public ServiceCounter TargetCounter => _targetCounter;
+        public BarCustomerState BarState => _barState;
+        public bool IsInBarQueue => _isInBarQueue;
+        public float QueuePatienceTimer => _queuePatienceTimer;
+        public float MaxQueuePatience => _maxQueuePatience;
 
         // Archetype / Beverage specifications
         public NPCArchetype Archetype { get; private set; }
@@ -69,6 +92,14 @@ namespace LemonEmpire.Trading
             _agent = GetComponent<NavMeshAgent>();
             _agent.speed = 2.5f;
             _agent.stoppingDistance = 1.5f;
+
+            // Add CapsuleCollider for player interaction (raycast)
+            var col = GetComponent<CapsuleCollider>();
+            if (col == null) col = gameObject.AddComponent<CapsuleCollider>();
+            col.isTrigger = true;
+            col.center = new Vector3(0f, 0.9f, 0f);
+            col.radius = 0.35f;
+            col.height = 1.8f;
 
             _animator = GetComponent<Animator>();
             if (_animator == null)
@@ -276,7 +307,19 @@ namespace LemonEmpire.Trading
             if (!wentToTable)
             {
                 if (_targetCounter != null)
-                    SetDestinationSafe(_targetCounter.transform.position);
+                {
+                    _isInBarQueue = true;
+                    _barState = BarCustomerState.WalkingToQueue;
+                    if (_agent == null) _agent = GetComponent<NavMeshAgent>();
+                    if (_agent != null) _agent.stoppingDistance = 0.1f;
+                    _targetCounter.RegisterCustomer(this);
+
+                    // Add Patience UI
+                    var patienceUIGo = new GameObject("PatienceUIContainer");
+                    patienceUIGo.transform.SetParent(transform, false);
+                    _patienceUI = patienceUIGo.AddComponent<LemonEmpire.UI.NPCPatienceUI>();
+                    _patienceUI.Initialize(this);
+                }
 
                 float precalcReaction = CalculateReactionScore();
                 if (DialogueUI.Instance != null)
@@ -333,6 +376,12 @@ namespace LemonEmpire.Trading
 
         private void Update()
         {
+            if (_isInBarQueue)
+            {
+                UpdateBarQueueCustomer();
+                return;
+            }
+
             if (_animator != null)
             {
                 float currentSpeed = (_agent != null && _agent.enabled && _agent.isOnNavMesh) ? _agent.velocity.magnitude : 0f;
@@ -509,9 +558,27 @@ namespace LemonEmpire.Trading
 
         private void UpdateLeaving()
         {
-            if (!_agent.pathPending && _agent.remainingDistance <= _agent.stoppingDistance)
+            if (_agent == null) _agent = GetComponent<NavMeshAgent>();
+            if (_agent == null || !_agent.enabled || !_agent.isOnNavMesh)
+                return;
+
+            if (!_agent.pathPending)
             {
-                Destroy(gameObject);
+                // Verify that we are close to the destination (or remaining distance is small on a valid path)
+                float distToDest = Vector3.Distance(transform.position, _agent.destination);
+                if (distToDest <= _agent.stoppingDistance + 0.5f || (_agent.remainingDistance <= _agent.stoppingDistance && _agent.hasPath && _agent.velocity.sqrMagnitude < 0.01f))
+                {
+                    Destroy(gameObject);
+                }
+            }
+        }
+
+        public void Flee()
+        {
+            if (_agent == null) _agent = GetComponent<NavMeshAgent>();
+            if (_agent != null)
+            {
+                _agent.speed = 6.0f; // Fast fleeing speed
             }
         }
 
@@ -569,6 +636,391 @@ namespace LemonEmpire.Trading
             }
             GoToExit();
         }
+
+        public void InitializeQueuePatience(bool isForOrder)
+        {
+            float basePatience = isForOrder ? 45f : 60f;
+            float cleanliness = 100f;
+            if (LemonEmpire.Core.ShopCleanlinessManager.Instance != null)
+            {
+                cleanliness = LemonEmpire.Core.ShopCleanlinessManager.Instance.Cleanliness;
+            }
+            float patienceMultiplier = Mathf.Clamp(cleanliness / 100f, 0.1f, 1f);
+            
+            bool isJukeboxPlaying = false;
+            if (UpgradeManager.HasJukebox)
+            {
+                var jb = FindFirstObjectByType<Jukebox>();
+                if (jb != null && jb.IsPlaying)
+                {
+                    isJukeboxPlaying = true;
+                }
+            }
+
+            if (isJukeboxPlaying)
+            {
+                _queuePatienceTimer = basePatience * patienceMultiplier * 2.0f; // doubled patience!
+            }
+            else
+            {
+                _queuePatienceTimer = basePatience * patienceMultiplier;
+            }
+
+            _maxQueuePatience = _queuePatienceTimer;
+            _patienceInitialized = true;
+        }
+
+        public void SetQueueDestination(Vector3 destination, bool isFront)
+        {
+            SetDestinationSafe(destination);
+            if (_barState == BarCustomerState.WalkingToQueue)
+            {
+                StartCoroutine(WaitUntilReachedFirstSpot(destination, isFront));
+            }
+            else
+            {
+                if (isFront && _barState == BarCustomerState.WaitingInLine)
+                {
+                    _barState = BarCustomerState.WaitingForOrder;
+                    if (_targetCounter != null)
+                    {
+                        transform.rotation = Quaternion.LookRotation(_targetCounter.transform.position - transform.position);
+                    }
+                }
+            }
+        }
+
+        private IEnumerator WaitUntilReachedFirstSpot(Vector3 destination, bool isFront)
+        {
+            while (Vector3.Distance(transform.position, destination) > 0.35f)
+            {
+                yield return null;
+            }
+
+            if (_barState == BarCustomerState.WalkingToQueue)
+            {
+                if (isFront)
+                {
+                    _barState = BarCustomerState.WaitingForOrder;
+                    if (_targetCounter != null)
+                    {
+                        transform.rotation = Quaternion.LookRotation(_targetCounter.transform.position - transform.position);
+                    }
+                }
+                else
+                {
+                    _barState = BarCustomerState.WaitingInLine;
+                }
+                InitializeQueuePatience(true);
+            }
+        }
+
+        private void UpdateBarQueueCustomer()
+        {
+            if (_animator != null)
+            {
+                float currentSpeed = (_agent != null && _agent.enabled && _agent.isOnNavMesh) ? _agent.velocity.magnitude : 0f;
+                _animator.SetFloat("Speed", currentSpeed);
+            }
+
+            if (_barState == BarCustomerState.Leaving)
+            {
+                UpdateLeaving();
+                return;
+            }
+
+            if (_barState == BarCustomerState.Drinking)
+            {
+                return;
+            }
+
+            // Patience tick
+            if (_barState == BarCustomerState.WaitingInLine || 
+                _barState == BarCustomerState.WaitingForOrder || 
+                _barState == BarCustomerState.WaitingForDrink)
+            {
+                _queuePatienceTimer -= Time.deltaTime;
+                if (_queuePatienceTimer <= 0f)
+                {
+                    HandleQueueTimeout();
+                }
+            }
+        }
+
+        private void HandleQueueTimeout()
+        {
+            Debug.Log($"[NPCBuyer] Customer {gameObject.name} timed out in bar queue!");
+            
+            if (PlayerVitals.Instance != null)
+            {
+                PlayerVitals.Instance.OnDealFailed();
+            }
+            
+            if (_targetCounter != null)
+            {
+                _targetCounter.UnregisterCustomer(this);
+            }
+
+            if (_patienceUI != null)
+            {
+                Destroy(_patienceUI.gameObject);
+                _patienceUI = null;
+            }
+
+            _barState = BarCustomerState.Leaving;
+            _isInBarQueue = false;
+            _state = NPCState.Leaving;
+            
+            if (_agent != null)
+            {
+                _agent.stoppingDistance = 1.5f; // Restore default
+                if (!_agent.enabled) _agent.enabled = true;
+            }
+
+            GoToExit();
+        }
+
+        public void SetDrinkingState(ItemBase drink)
+        {
+            _barState = BarCustomerState.Drinking;
+            
+            if (_agent != null)
+            {
+                _agent.enabled = false;
+            }
+
+            if (_animator != null)
+            {
+                _animator.SetFloat("Speed", 0f);
+            }
+
+            if (_patienceUI != null)
+            {
+                Destroy(_patienceUI.gameObject);
+                _patienceUI = null;
+            }
+
+            StartCoroutine(DrinkingRoutine(drink));
+        }
+
+        private IEnumerator DrinkingRoutine(ItemBase drink)
+        {
+            yield return new WaitForSeconds(3.0f);
+
+            if (_targetCounter != null)
+            {
+                _targetCounter.ClearPlacedDrink();
+                _targetCounter.UnregisterCustomer(this);
+            }
+
+            _barState = BarCustomerState.Leaving;
+            _isInBarQueue = false;
+            _state = NPCState.Leaving;
+
+            if (_agent != null)
+            {
+                _agent.stoppingDistance = 1.5f; // Restore default
+                _agent.enabled = true;
+            }
+
+            GoToExit();
+        }
+
+        public void TransitionToWaitingForDrink()
+        {
+            _barState = BarCustomerState.WaitingForDrink;
+            InitializeQueuePatience(false); // drink patience
+        }
+
+        #region IInteractable Implementation
+        public bool CanInteract
+        {
+            get
+            {
+                if (!_isInBarQueue || _targetCounter == null) return false;
+                
+                // Only allow interaction if this NPC is the first one in the queue
+                if (_targetCounter.ActiveCustomer != this) return false;
+
+                if (!_targetCounter.IsPlayerBehindCounter()) return false;
+
+                return _barState == BarCustomerState.WaitingForOrder || _barState == BarCustomerState.WaitingForDrink;
+            }
+        }
+
+        public string InteractionPrompt
+        {
+            get
+            {
+                bool paranoia = PlayerStatusEffects.Instance != null && PlayerStatusEffects.Instance.IsLemonParanoiaActive;
+                string nameStr = paranoia ? "Шпион конкурентов" : TranslateArchetype(Archetype);
+
+                if (_barState == BarCustomerState.WaitingForOrder)
+                {
+                    return paranoia 
+                        ? $"[E] Допросить шпиона ({nameStr})"
+                        : $"[E] Принять заказ у {nameStr}";
+                }
+                else if (_barState == BarCustomerState.WaitingForDrink)
+                {
+                    var carry = FindFirstObjectByType<PlayerCarry>();
+                    if (carry != null && carry.IsCarrying && carry.CarriedItem.ItemType == ItemType.BottledLemonade)
+                    {
+                        return paranoia
+                            ? $"[E] Швырнуть {carry.CarriedItem.DisplayName} в лицо шпиону"
+                            : $"[E] Подать {carry.CarriedItem.DisplayName} клиенту";
+                    }
+                    else
+                    {
+                        return $"{nameStr} ожидает напиток";
+                    }
+                }
+                return "";
+            }
+        }
+
+        public void Interact(PlayerInteractionContext context)
+        {
+            if (!CanInteract) return;
+
+            bool paranoia = PlayerStatusEffects.Instance != null && PlayerStatusEffects.Instance.IsLemonParanoiaActive;
+            if (paranoia)
+            {
+                var dialogueUI = UI.DialogueUI.Instance;
+                if (dialogueUI != null && !dialogueUI.IsActive)
+                {
+                    float quality = 100f;
+                    if (context.PlayerCarry != null && context.PlayerCarry.IsCarrying && context.PlayerCarry.CarriedItem != null)
+                    {
+                        quality = context.PlayerCarry.CarriedItem.Quality;
+                    }
+                    float reaction = (quality * 0.5f) + Random.Range(-20f, 20f);
+
+                    dialogueUI.StartDialogue(this, reaction, (success) => {
+                        if (success)
+                        {
+                            if (context.PlayerCarry != null && context.PlayerCarry.IsCarrying)
+                            {
+                                var drink = context.PlayerCarry.TakeItem();
+                                if (drink != null)
+                                {
+                                    _targetCounter.DeliverDrink(drink, this);
+                                }
+                                else
+                                {
+                                    _barState = BarCustomerState.Leaving;
+                                    _isInBarQueue = false;
+                                    _state = NPCState.Leaving;
+                                    
+                                    if (_targetCounter != null)
+                                    {
+                                        _targetCounter.UnregisterCustomer(this);
+                                    }
+
+                                    if (_patienceUI != null)
+                                    {
+                                        Destroy(_patienceUI.gameObject);
+                                        _patienceUI = null;
+                                    }
+
+                                    if (_agent != null)
+                                    {
+                                        _agent.stoppingDistance = 1.5f;
+                                        _agent.enabled = true;
+                                    }
+
+                                    GoToExit();
+                                }
+                            }
+                            else
+                            {
+                                _barState = BarCustomerState.Leaving;
+                                _isInBarQueue = false;
+                                _state = NPCState.Leaving;
+
+                                if (_targetCounter != null)
+                                {
+                                    _targetCounter.UnregisterCustomer(this);
+                                }
+
+                                if (_patienceUI != null)
+                                {
+                                    Destroy(_patienceUI.gameObject);
+                                    _patienceUI = null;
+                                }
+
+                                if (_agent != null)
+                                {
+                                    _agent.stoppingDistance = 1.5f;
+                                    _agent.enabled = true;
+                                }
+
+                                GoToExit();
+                            }
+                        }
+                        else
+                        {
+                            _barState = BarCustomerState.Leaving;
+                            _isInBarQueue = false;
+                            _state = NPCState.Leaving;
+
+                            if (_targetCounter != null)
+                            {
+                                _targetCounter.UnregisterCustomer(this);
+                            }
+
+                            if (_patienceUI != null)
+                            {
+                                Destroy(_patienceUI.gameObject);
+                                _patienceUI = null;
+                            }
+
+                            if (_agent != null)
+                            {
+                                _agent.stoppingDistance = 1.5f;
+                                _agent.enabled = true;
+                            }
+
+                            GoToExit();
+                        }
+                    });
+                }
+                return;
+            }
+
+            if (_barState == BarCustomerState.WaitingForOrder)
+            {
+                _targetCounter.TakeOrder(this);
+            }
+            else if (_barState == BarCustomerState.WaitingForDrink)
+            {
+                if (context.PlayerCarry != null && context.PlayerCarry.IsCarrying)
+                {
+                    var item = context.PlayerCarry.CarriedItem;
+                    if (item != null && item.ItemType == ItemType.BottledLemonade)
+                    {
+                        ItemBase drink = context.PlayerCarry.TakeItem();
+                        if (drink != null)
+                        {
+                            _targetCounter.DeliverDrink(drink, this);
+                        }
+                    }
+                }
+            }
+        }
+
+        private string TranslateArchetype(NPCArchetype archetype)
+        {
+            switch (archetype)
+            {
+                case NPCArchetype.Kids: return "Ребенок";
+                case NPCArchetype.Athletes: return "Спортсмен";
+                case NPCArchetype.Hipsters: return "Хипстер";
+                case NPCArchetype.PartyAnimals: return "Тусовщик";
+                default: return "Покупатель";
+            }
+        }
+        #endregion
     }
 }
 

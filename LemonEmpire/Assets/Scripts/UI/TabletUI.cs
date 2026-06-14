@@ -1799,30 +1799,30 @@ namespace LemonEmpire.UI
         {
             var upgrades = new List<(string displayName, string managerName, int cost, Func<bool> isUnlocked)>
             {
-                ("Расширение зала (Левое крыло)", "Разширение зала (Левое крыло)", 1000, () => UpgradeManager.IsLeftHallUnlocked),
-                ("Музыкальный автомат (Jukebox)",  "Музыкальный автомат (Jukebox)",  300, () => UpgradeManager.HasJukebox),
-                ("Торговый автомат (Snacks)",       "Торговый автомат (Snacks)",       150, () => UpgradeManager.HasSnackVending),
-                ("Неоновая вывеска (Neon)",         "Неоновая вывеска (Neon)",         250, () => UpgradeManager.HasNeonSigns),
+                ("Расширение зала", "Разширение зала (Левое крыло)", 1000, () => UpgradeManager.IsLeftHallUnlocked),
+                ("Музыкальный автомат",  "Музыкальный автомат (Jukebox)",  300, () => UpgradeManager.HasJukebox),
+                ("Торговый автомат",       "Торговый автомат (Snacks)",       150, () => UpgradeManager.HasSnackVending),
+                ("Неоновая вывеска",         "Неоновая вывеска (Neon)",         250, () => UpgradeManager.HasNeonSigns),
                 ("Уличная мусорка для коробок",     "Уличная мусорка для коробок",     200, () => UpgradeManager.HasTrashBin),
-                ("Двойной холодильник (Double)",    "Двойной холодильник",             600, () => UpgradeManager.HasDoubleCooler),
-                ("Премиум-полки (Premium)",        "Премиум-полки",                   400, () => UpgradeManager.HasPremiumShelves),
+                ("Двойной холодильник",    "Двойной холодильник",             600, () => UpgradeManager.HasDoubleCooler),
+                ("Премиум-полки",        "Премиум-полки",                   400, () => UpgradeManager.HasPremiumShelves),
             };
 
             if (UpgradeManager.WarehouseUpgradeLevel == 0)
             {
-                upgrades.Add(("Модернизация склада I (Секция 1)", "Модернизация склада I", 300, () => false));
+                upgrades.Add(("Модернизация склада I", "Модернизация склада I", 300, () => false));
             }
             else if (UpgradeManager.WarehouseUpgradeLevel == 1)
             {
-                upgrades.Add(("Модернизация склада II (Секция 2)", "Модернизация склада II", 450, () => false));
+                upgrades.Add(("Модернизация склада II", "Модернизация склада II", 450, () => false));
             }
             else if (UpgradeManager.WarehouseUpgradeLevel == 2)
             {
-                upgrades.Add(("Модернизация склада III (Секция 3)", "Модернизация склада III", 600, () => false));
+                upgrades.Add(("Модернизация склада III", "Модернизация склада III", 600, () => false));
             }
             else
             {
-                upgrades.Add(("Модернизация склада (Макс. уровень)", "Модернизация склада III", 600, () => true));
+                upgrades.Add(("Модернизация склада", "Модернизация склада III", 600, () => true));
             }
 
             var scroll = new ScrollView();

@@ -379,10 +379,11 @@ namespace LemonEmpire.UI
             var counter = FindFirstObjectByType<Production.ServiceCounter>();
             ItemBase bottle = (counter != null) ? counter.PlacedDrink : null;
             
-            if (bottle != null)
+            bool isParanoid = Player.PlayerStatusEffects.Instance != null && Player.PlayerStatusEffects.Instance.IsLemonParanoiaActive;
+            if (bottle != null || isParanoid)
             {
-                _receiptCard.style.display = DisplayStyle.Flex;
-                PopulateReceipt(bottle);
+                _receiptCard.style.display = bottle != null ? DisplayStyle.Flex : DisplayStyle.None;
+                if (bottle != null) PopulateReceipt(bottle);
                 ShowServiceCounterDialogue(npc, bottle);
             }
             else
@@ -522,6 +523,7 @@ namespace LemonEmpire.UI
                 AddDialogueButton("🔴 «Я знаю, что ты шпион конкурентов! Убирайся!»", new Color(0.95f, 0.38f, 0.35f, 1f), true, () => {
                     if (_npcDialogueTextLabel != null)
                         _npcDialogueTextLabel.text = "«Ч-что?! Какой еще шпион?! Вы сумасшедший!»\n\n(Покупатель в панике бросает бутылку и убегает)";
+                    if (_currentNPC != null) _currentNPC.Flee();
                     ShowServiceCloseButton(false);
                 });
 
@@ -529,18 +531,34 @@ namespace LemonEmpire.UI
                     bool intimidated = UnityEngine.Random.value < 0.5f;
                     if (intimidated)
                     {
-                        float fearPrice = bottle.RetailPrice * 1.5f;
+                        float basePrice = bottle != null ? bottle.RetailPrice : 15f;
+                        float fearPrice = basePrice * 1.5f;
                         if (_npcDialogueTextLabel != null)
                             _npcDialogueTextLabel.text = $"«Пожалуйста, не кричите! Я просто хотел попить! Держите ваши ${fearPrice:F2} и не трогайте меня!»\n\n(Испуганный шпион переплачивает 50% и в спешке убегает с бутылкой)";
                         _buttonsContainer.Clear();
                         AddDialogueButton("Забрать деньги", new Color(0.33f, 0.87f, 0.42f, 1f), true, () => {
-                            SellBottle(bottle, fearPrice);
+                            if (_currentNPC != null) _currentNPC.Flee();
+                            if (bottle != null)
+                            {
+                                SellBottle(bottle, fearPrice);
+                            }
+                            else
+                            {
+                                if (EconomyManager.Instance != null)
+                                {
+                                    EconomyManager.Instance.Earn(fearPrice);
+                                }
+                                if (_npcDialogueTextLabel != null)
+                                    _npcDialogueTextLabel.text = $"[Сделка успешна] Шпион отдал вам ${fearPrice:F2} и убежал.";
+                                ShowServiceCloseButton(true);
+                            }
                         });
                     }
                     else
                     {
                         if (_npcDialogueTextLabel != null)
                             _npcDialogueTextLabel.text = "«Да вы просто безумец! Я вызываю полицию!»\n\n(Покупатель бросает напиток и в страхе убегает)";
+                        if (_currentNPC != null) _currentNPC.Flee();
                         ShowServiceCloseButton(false);
                     }
                 });
@@ -548,6 +566,7 @@ namespace LemonEmpire.UI
                 AddDialogueButton("🔴 «Твоя маскировка ужасна! Вон отсюда!»", new Color(0.95f, 0.38f, 0.35f, 1f), true, () => {
                     if (_npcDialogueTextLabel != null)
                         _npcDialogueTextLabel.text = "«Сумасшедший дом... Больше ни ногой сюда!»\n\n(Покупатель быстро ретируется)";
+                    if (_currentNPC != null) _currentNPC.Flee();
                     ShowServiceCloseButton(false);
                 });
 

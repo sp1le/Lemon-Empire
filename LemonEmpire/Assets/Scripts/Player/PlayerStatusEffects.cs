@@ -234,8 +234,8 @@ namespace LemonEmpire.Player
 
         public void NotifyDealSuccess()
         {
-            // Reset paranoia on success, or keep it cumulative? Let's just track it but keep it cumulative as requested.
-            Debug.Log("[PlayerStatusEffects] Deal succeeded!");
+            ResetParanoia();
+            Debug.Log("[PlayerStatusEffects] Deal succeeded! Paranoia reset.");
         }
 
         public void ResetParanoia()
